@@ -30,11 +30,16 @@ module ToonFu
   #   ToonFu.encode([{id: 1}, {id: 2}])     # => "[2]{id}:\n  1\n  2"
   #   ToonFu.encode({a: {x: 1}, b: {x: 2}}) # => "[2:]{x}:\n  a: 1\n  b: 2"
   #
-  # @param value [Object] see {Encoder#encode} for the accepted types
+  # @param value [Object] see {Encoder#encode} for the accepted types; a Hash
+  #   needs braces, since bare +key: value+ pairs are Ruby keyword arguments
   # @param options [Hash] see {Encoder#initialize}
   # @return [String]
   # @raise [Error] see {Encoder#encode}
-  def self.encode(value, **options)
+  # @raise [ArgumentError] when no value is given, as with a Hash written
+  #   without braces
+  def self.encode(value = (missing = true), **options)
+    raise ArgumentError, "ToonFu.encode takes the value as its first argument; wrap a Hash in braces: ToonFu.encode({key: value})" if missing
+
     (options.empty? ? DEFAULT_ENCODER : Encoder.new(**options)).encode(value)
   end
 
