@@ -4,7 +4,7 @@ module ToonFu
   class StringLiteral
     READS_AS_LITERAL = /\A(?:true|false|null|[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)\z/
     UNSAFE = Encoder::DELIMITERS.to_h do |delimiter|
-      [delimiter, /\A[ \t#-]|[ \t]\z|[:"\\\[\]{}\x00-\x1f#{Regexp.escape(delimiter)}]/]
+      [delimiter, /\A[ \t#-]|[ \t]\z|[:"\\\[\]{}\x00-\x1f#{Regexp.escape(delimiter) if delimiter.ord > 0x1f}]/]
     end.freeze
     BARE_KEY = /\A[A-Za-z_][A-Za-z0-9_.]*\z/
     ESCAPABLE = /["\\\x00-\x1f]/

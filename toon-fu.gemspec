@@ -18,6 +18,8 @@ Gem::Specification.new do |spec|
   spec.metadata = {
     "source_code_uri" => "https://github.com/hoblin/toon-fu",
     "changelog_uri" => "https://github.com/hoblin/toon-fu/releases",
+    "documentation_uri" => "https://rubydoc.info/gems/toon-fu",
+    "bug_tracker_uri" => "https://github.com/hoblin/toon-fu/issues",
     "rubygems_mfa_required" => "true"
   }
 

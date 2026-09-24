@@ -20,7 +20,7 @@ Every Ruby TOON gem on RubyGems was published in late 2025 and stopped at spec 1
 gem install toon-fu
 ```
 
-In a Gemfile, pin the spec line you speak — see [Versioning](#versioning).
+In a Gemfile, a plain `gem "toon-fu"` is enough — `Bundler.require` loads it; pin the spec line you speak, see [Versioning](#versioning).
 
 ```ruby
 require "toon_fu"
