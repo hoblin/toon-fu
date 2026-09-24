@@ -8,9 +8,11 @@ Gem::Specification.new do |spec|
   spec.authors = ["Yevhenii Hurin"]
   spec.email = ["evgeny.gurin@gmail.com"]
 
-  spec.summary = "TOON (Token-Oriented Object Notation) for Ruby, versioned by the spec it implements"
-  spec.description = "A Ruby implementation of TOON, the token-efficient serialization format for LLM input. " \
-                     "The gem's MAJOR.MINOR tracks the TOON specification version; PATCH is the gem's own."
+  spec.summary = "TOON encoder for Ruby that passes every spec fixture — compact, token-efficient LLM input from your Ruby data"
+  spec.description = "Encodes Ruby hashes, arrays, dates and your own objects into TOON, the token-efficient format " \
+                     "for LLM prompts: tables for uniform arrays, quotes only where needed. The only Ruby TOON gem " \
+                     "that passes all of the current spec's encode fixtures; its version tracks the spec it implements, " \
+                     "and anything it cannot represent raises an error so your data arrives complete."
   spec.homepage = "https://github.com/hoblin/toon-fu"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.3"
