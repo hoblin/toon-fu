@@ -1,0 +1,25 @@
+name: Spec drift
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: |
+          latest=$(curl -fsSL https://api.github.com/repos/toon-format/spec/releases/latest | jq -r .tag_name | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/')
+          ours=$(ruby -r ./lib/toon_fu/version -e 'print ToonFu::VERSION[/\A\d+\.\d+/]')
+          if [ "$ours" != "$latest" ]; then
+            echo "::error::toon-fu implements spec $ours, latest is $latest"
+            exit 1
+          fi
