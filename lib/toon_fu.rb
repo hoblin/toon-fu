@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "date"
+
 require_relative "toon_fu/version"
 require_relative "toon_fu/encoder"
 require_relative "toon_fu/float_literal"
@@ -8,6 +10,7 @@ require_relative "toon_fu/string_literal"
 require_relative "toon_fu/normalizer"
 require_relative "toon_fu/fields"
 require_relative "toon_fu/writer"
+require_relative "toon_fu/encodable"
 
 # TOON (Token-Oriented Object Notation) for Ruby.
 module ToonFu

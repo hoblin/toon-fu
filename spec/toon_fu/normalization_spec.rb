@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "bigdecimal"
-require "date"
 
 RSpec.describe ToonFu, ".encode with Ruby host types" do
   def encode(value) = described_class.encode(value)

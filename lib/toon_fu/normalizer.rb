@@ -25,14 +25,14 @@ module ToonFu
       when Hash then within(value) { object(value) }
       when Array, Set then within(value) { value.map { |element| call(element) } }
       when Time then timestamp(value)
+      when DateTime then date_time(value)
+      when Date then value.iso8601
       else convert(value)
       end
     end
 
     def convert(value)
-      if defined?(DateTime) && value.is_a?(DateTime) then date_time(value)
-      elsif defined?(Date) && value.is_a?(Date) then value.iso8601
-      elsif defined?(BigDecimal) && value.is_a?(BigDecimal) then DecimalLiteral.new(value)
+      if defined?(BigDecimal) && value.is_a?(BigDecimal) then DecimalLiteral.new(value)
       elsif value.respond_to?(:to_hash) then within(value) { call(value.to_hash) }
       elsif value.respond_to?(:to_ary) then within(value) { call(value.to_ary) }
       elsif value.respond_to?(:to_str) then within(value) { call(value.to_str) }
