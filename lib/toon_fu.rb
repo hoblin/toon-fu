@@ -8,6 +8,7 @@ require_relative "toon_fu/string_literal"
 require_relative "toon_fu/normalizer"
 require_relative "toon_fu/fields"
 require_relative "toon_fu/writer"
+require_relative "toon_fu/encodable"
 
 # TOON (Token-Oriented Object Notation) for Ruby.
 module ToonFu
