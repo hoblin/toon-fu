@@ -22,6 +22,7 @@ module ToonFu
   #   ToonFu.encode({user: {id: 1}})       # => "user:\n  id: 1"
   #   ToonFu.encode({tags: ["a", "b"]})    # => "tags[2]: a,b"
   #   ToonFu.encode([{id: 1}, {id: 2}])    # => "[2]{id}:\n  1\n  2"
+  #   ToonFu.encode({a: {x: 1}, b: {x: 2}}) # => "[2:]{x}:\n  a: 1\n  b: 2"
   #
   # @param value [Hash, Array, nil, true, false, Integer, Float, String]
   # @param options [Hash] see {Encoder#initialize}

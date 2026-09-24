@@ -21,7 +21,7 @@ module ToonFu
 
     def value(value)
       case value
-      when Hash then object(value)
+      when Hash then keyed("", value) || object(value)
       when Array then array("", value)
       else line(scalar(value))
       end
@@ -32,6 +32,8 @@ module ToonFu
         name = @strings.key(key.to_s)
         case value
         when Hash
+          next if keyed(name, value)
+
           line("#{name}:")
           nested { object(value) }
         when Array then array(name, value)
@@ -53,6 +55,14 @@ module ToonFu
         line("#{name}#{header(values)}")
         nested { values.each { |element| item(element) } }
       end
+    end
+
+    def keyed(name, hash)
+      fields = Fields.of(hash.values) if hash.size >= 2
+      return unless fields
+
+      line("#{name}#{header(hash, fields, keyed: true)}")
+      nested { hash.each { |key, entry| line("#{@strings.key(key.to_s)}: #{row(fields.cells(entry))}") } }
     end
 
     def item(element)
@@ -78,8 +88,8 @@ module ToonFu
       values.map { |value| scalar(value) }.join(@delimiter)
     end
 
-    def header(values, fields = nil)
-      "[#{values.size}#{@marker}]#{field_list(fields) if fields}:"
+    def header(values, fields = nil, keyed: false)
+      "[#{values.size}#{":" if keyed}#{@marker}]#{field_list(fields) if fields}:"
     end
 
     def field_list(fields)
