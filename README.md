@@ -130,6 +130,8 @@ BUNDLE_GEMFILE=benchmark/Gemfile bundle install
 BUNDLE_GEMFILE=benchmark/Gemfile bundle exec ruby benchmark/run.rb
 ```
 
+To see where toon-fu itself spends time and allocates, `benchmark/profile.rb ["workload name"]` prints a stackprof CPU profile and memory_profiler allocation sites for one workload.
+
 ## Versioning
 
 The gem version tracks the TOON specification it implements:

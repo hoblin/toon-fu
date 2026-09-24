@@ -4,6 +4,8 @@ source "https://rubygems.org"
 
 gem "benchmark-ips"
 gem "bigdecimal"
+gem "memory_profiler"
+gem "stackprof"
 gem "toon-fu", path: ".."
 gem "toon-ruby"
 gem "sorbet-toon"
