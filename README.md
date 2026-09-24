@@ -2,14 +2,13 @@
 
 [![CI](https://github.com/hoblin/toon-fu/actions/workflows/ci.yml/badge.svg)](https://github.com/hoblin/toon-fu/actions/workflows/ci.yml)
 [![Spec drift](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml/badge.svg)](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml)
+[![Gem](https://img.shields.io/gem/v/toon-fu)](https://rubygems.org/gems/toon-fu)
 
-[TOON](https://toonformat.dev/) (Token-Oriented Object Notation) encoder for Ruby, versioned by the spec it implements.
-
-`toon-spec: 4.1`
+[TOON](https://toonformat.dev/) (Token-Oriented Object Notation) encoder for Ruby, versioned by the spec it implements: the gem's `MAJOR.MINOR` is the TOON spec version it speaks.
 
 ## What is this?
 
-TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode fixture of TOON 4.1 passes.
+TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode fixture of the spec version it implements passes.
 
 ## Why?
 
@@ -17,9 +16,11 @@ Every Ruby TOON gem on RubyGems was published in late 2025 and stopped at spec 1
 
 ## Getting started
 
-```ruby
-gem "toon-fu", "~> 4.1.0"
+```bash
+gem install toon-fu
 ```
+
+In a Gemfile, pin the spec line you speak — see [Versioning](#versioning).
 
 ```ruby
 require "toon_fu"
@@ -108,10 +109,10 @@ Everything else — including `Struct`, `Data` and circular references — raise
 
 The gem version tracks the TOON specification it implements:
 
-- `MAJOR.MINOR` is the spec version. `4.1.x` speaks TOON 4.1.
+- `MAJOR.MINOR` is the spec version: `X.Y.Z` speaks TOON `X.Y`.
 - `PATCH` is the gem's own: fixes and improvements that do not change the dialect.
 
-Pin to the spec line you need: `gem "toon-fu", "~> 4.1.0"`. A daily check turns the badge above red when a newer spec is released.
+Pin the spec line, not just the major: `gem "toon-fu", "~> X.Y.0"` takes our fixes and never moves you to a new dialect. The gem badge above shows the current release; the spec-drift badge turns red when a newer spec is released and toon-fu has not caught up yet.
 
 Release notes: [GitHub releases](https://github.com/hoblin/toon-fu/releases).
 
