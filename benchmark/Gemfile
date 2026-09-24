@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "benchmark-ips"
+gem "bigdecimal"
+gem "memory_profiler"
+gem "stackprof"
+gem "toon-fu", path: ".."
+gem "toon-ruby"
+gem "sorbet-toon"
+gem "toon_my_json"
+gem "toon-format"

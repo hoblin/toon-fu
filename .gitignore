@@ -1,3 +1,4 @@
 *.gem
 thoughts/
 /thoughts/
+benchmark/Gemfile.lock
