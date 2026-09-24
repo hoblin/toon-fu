@@ -14,6 +14,7 @@ require_relative "toon_fu/encodable"
 
 # TOON (Token-Oriented Object Notation) for Ruby.
 module ToonFu
+  # Raised for input TOON cannot represent; see {Encoder#encode}.
   class Error < StandardError; end
 
   private_constant :FloatLiteral, :DecimalLiteral, :StringLiteral, :Normalizer, :Fields, :Writer
