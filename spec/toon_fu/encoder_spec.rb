@@ -102,6 +102,10 @@ RSpec.describe ToonFu::Encoder do
       it "refuses a value it cannot encode inside a hash" do
         expect { encoder.encode({at: Object.new}) }.to raise_error(ToonFu::Error, /Object/)
       end
+
+      it "refuses a value it cannot encode inside an array" do
+        expect { encoder.encode({tags: [Object.new]}) }.to raise_error(ToonFu::Error, /Object/)
+      end
     end
 
     it "refuses values it cannot encode" do

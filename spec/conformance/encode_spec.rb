@@ -5,12 +5,8 @@ require "json"
 RSpec.describe "TOON spec encode fixtures" do
   paths = Dir[File.expand_path("../toon-spec/tests/fixtures/encode/*.json", __dir__)].sort
   option_names = {"delimiter" => :delimiter, "indentSize" => :indent_size}
-  holds_object_in_array = lambda do |value, in_array = false|
-    case value
-    when Hash then in_array || value.each_value.any? { |nested| holds_object_in_array.call(nested) }
-    when Array then value.any? { |element| holds_object_in_array.call(element, true) }
-    else false
-    end
+  holds_object_in_array = lambda do |value|
+    value.is_a?(Hash) ? value.each_value.any?(&holds_object_in_array) : value.is_a?(Array) && value.flatten.any?(Hash)
   end
 
   it "finds the fixtures (run `git submodule update --init` if this fails)" do

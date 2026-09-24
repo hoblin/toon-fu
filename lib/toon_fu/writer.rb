@@ -29,15 +29,15 @@ module ToonFu
         when Hash
           line("#{name}:")
           nested { object(value) }
-        when Array then array(name, value, empty: "#{name}: []")
+        when Array then array(name, value)
         else line("#{name}: #{scalar(value)}")
         end
       end
     end
 
-    def array(name, values, empty: "[]")
+    def array(name, values)
       if values.empty?
-        line(empty)
+        line(name.empty? ? "[]" : "#{name}: []")
       elsif values.all?(Array)
         line("#{name}#{header(values)}")
         nested { values.each { |inner| line("- #{inline(inner)}") } }
