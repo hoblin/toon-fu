@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    toon-fu (0.0.1)
+    toon-fu (4.1.0)
 
 GEM
   remote: https://rubygems.org/
