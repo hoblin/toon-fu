@@ -16,15 +16,15 @@ Every Ruby TOON gem on RubyGems was published in late 2025 and stopped at spec 1
 
 ## Getting started
 
-```bash
-gem install toon-fu
-```
-
-In a Gemfile, a plain `gem "toon-fu"` is enough — `Bundler.require` loads it; pin the spec line you speak, see [Versioning](#versioning).
+Add it to your Gemfile — `Bundler.require` (as in Rails) loads it, no `require` needed:
 
 ```ruby
-require "toon_fu"
+gem "toon-fu"
+```
 
+Outside Bundler, `gem install toon-fu` and `require "toon_fu"`. To pin the spec version, see [Versioning](#versioning).
+
+```ruby
 ToonFu.encode({users: [{id: 1, name: "Ada", role: "admin"}, {id: 2, name: "Bob", role: "user"}]})
 ```
 
