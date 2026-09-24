@@ -121,7 +121,7 @@ The Ruby TOON encoders with more than 10,000 downloads, run by [`benchmark/run.r
 What the fixture gaps mean in practice:
 
 - **toon-ruby, sorbet-toon** — spec 1.2: `#tag` and `+1` stay unquoted (a current reader sees a comment and a number), arrays of objects with nested columns fall back to lists instead of tables with field groups, no keyed tables. Unknown objects are not refused: toon-ruby writes `null`, sorbet-toon writes `"#<Foo:0x…>"`. toon-ruby also shifts `Date` by a day east of Greenwich.
-- **toon_my_json, toon-format** — not valid TOON: the table header lands on its own line (`users:` then `[2]{id,name}:`), toon-format writes `[2,]` and misplaces the rows, and nested objects in table cells become broken text. Their speed comes partly from not doing the spec's work.
+- **toon_my_json, toon-format** — not valid TOON: the table header lands on its own line (`users:` then `[2]{id,name}:`), toon-format writes `[2,]` and misplaces the rows, and nested objects in table cells become broken text.
 
 Rerun it:
 
