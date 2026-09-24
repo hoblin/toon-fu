@@ -17,7 +17,8 @@ Gem::Specification.new do |spec|
 
   spec.metadata = {
     "source_code_uri" => "https://github.com/hoblin/toon-fu",
-    "changelog_uri" => "https://github.com/hoblin/toon-fu/blob/main/CHANGELOG.md"
+    "changelog_uri" => "https://github.com/hoblin/toon-fu/blob/main/CHANGELOG.md",
+    "rubygems_mfa_required" => "true"
   }
 
   spec.files = Dir.glob("lib/**/*") + %w[README.md LICENSE CHANGELOG.md]
