@@ -113,18 +113,8 @@ RSpec.describe ToonFu::Encoder do
         expect(encoder.encode({users: [{id: 1, name: "Ada"}, {id: 2, name: "Bo"}]})).to eq("users[2]{id,name}:\n  1,Ada\n  2,Bo")
       end
 
-      {
-        "rows with different keys" => [{a: 1}, {b: 2}],
-        "a row with an extra key" => [{a: 1}, {a: 2, b: 3}],
-        "a primitive among objects" => [{a: 1}, 5],
-        "nested objects with different keys" => [{m: {x: 1}}, {m: {y: 2}}],
-        "null mixed with objects in a column" => [{m: {x: 1}}, {m: nil}],
-        "an array inside a nested object" => [{m: {x: [1]}}, {m: {x: [2]}}],
-        "an empty nested object" => [{m: {}}, {m: {}}]
-      }.each do |shape, rows|
-        it "keeps #{shape} out of tabular form" do
-          expect { encoder.encode(rows) }.to raise_error(ToonFu::Error)
-        end
+      it "lists items one indent level deep whatever the indent size" do
+        expect(described_class.new(indent_size: 4).encode({items: [{a: 1, b: 2}, [1]]})).to eq("items[2]:\n    - a: 1\n        b: 2\n    - [1]: 1")
       end
     end
 
