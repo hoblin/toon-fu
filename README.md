@@ -16,13 +16,13 @@ Every Ruby TOON gem on RubyGems was published in late 2025 and stopped at spec 1
 
 ## Getting started
 
-Add it to your Gemfile — `Bundler.require` (as in Rails) loads it, no `require` needed:
+Add it to your Gemfile:
 
 ```ruby
 gem "toon-fu"
 ```
 
-Outside Bundler, `gem install toon-fu` and `require "toon_fu"`. To pin the spec version, see [Versioning](#versioning).
+In a plain script: `gem install toon-fu` and `require "toon_fu"`. To pin the spec version, see [Versioning](#versioning).
 
 ```ruby
 ToonFu.encode({users: [{id: 1, name: "Ada", role: "admin"}, {id: 2, name: "Bob", role: "user"}]})
@@ -78,7 +78,7 @@ ToonFu.encode({price: Money.new(1999, "EUR")})
 #   currency: EUR
 ```
 
-Anything toon-fu does not know raises `ToonFu::Error` instead of guessing:
+Any other value raises `ToonFu::Error`:
 
 ```ruby
 ToonFu.encode({at: Object.new})
@@ -142,9 +142,9 @@ BUNDLE_GEMFILE=benchmark/Gemfile bundle exec ruby benchmark/profile.rb "table, 1
 The gem version tracks the TOON specification it implements:
 
 - `MAJOR.MINOR` is the spec version: `X.Y.Z` speaks TOON `X.Y`.
-- `PATCH` is the gem's own: fixes and improvements that do not change the dialect.
+- `PATCH` is the gem's own: fixes and improvements within the same dialect.
 
-Pin the spec line, not just the major: `gem "toon-fu", "~> X.Y.0"` takes our fixes and never moves you to a new dialect. The gem badge above shows the current release; the spec-drift badge turns red when a newer spec is released and toon-fu has not caught up yet.
+Pin the spec line with `gem "toon-fu", "~> X.Y.0"`: it takes our fixes and keeps you on the dialect you speak. The gem badge above shows the current release; the spec-drift badge turns red when a newer spec is released and toon-fu has not caught up yet.
 
 Release notes: [GitHub releases](https://github.com/hoblin/toon-fu/releases).
 
