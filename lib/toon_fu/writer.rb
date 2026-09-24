@@ -38,6 +38,9 @@ module ToonFu
     def array(name, values)
       if values.empty?
         line(name.empty? ? "[]" : "#{name}: []")
+      elsif (fields = Fields.of(values))
+        line("#{name}[#{values.size}#{@marker}]#{field_list(fields)}:")
+        nested { values.each { |row| line(fields.cells(row).map { |cell| scalar(cell) }.join(@delimiter)) } }
       elsif values.all?(Array)
         line("#{name}#{header(values)}")
         nested { values.each { |inner| line("- #{inline(inner)}") } }
@@ -54,6 +57,11 @@ module ToonFu
 
     def header(values)
       "[#{values.size}#{@marker}]:"
+    end
+
+    def field_list(fields)
+      names = fields.map { |key, nested| "#{@strings.key(key.to_s)}#{field_list(nested) if nested}" }
+      "{#{names.join(@delimiter)}}"
     end
 
     def line(text)

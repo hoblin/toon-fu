@@ -4,13 +4,14 @@ require_relative "toon_fu/version"
 require_relative "toon_fu/encoder"
 require_relative "toon_fu/float_literal"
 require_relative "toon_fu/string_literal"
+require_relative "toon_fu/fields"
 require_relative "toon_fu/writer"
 
 # TOON (Token-Oriented Object Notation) for Ruby.
 module ToonFu
   class Error < StandardError; end
 
-  private_constant :FloatLiteral, :StringLiteral, :Writer
+  private_constant :FloatLiteral, :StringLiteral, :Fields, :Writer
 
   # Encodes a value as TOON.
   #
@@ -20,6 +21,7 @@ module ToonFu
   #   ToonFu.encode(1e-7)                  # => "1e-7"
   #   ToonFu.encode({user: {id: 1}})       # => "user:\n  id: 1"
   #   ToonFu.encode({tags: ["a", "b"]})    # => "tags[2]: a,b"
+  #   ToonFu.encode([{id: 1}, {id: 2}])    # => "[2]{id}:\n  1\n  2"
   #
   # @param value [Hash, Array, nil, true, false, Integer, Float, String]
   # @param options [Hash] see {Encoder#initialize}

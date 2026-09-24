@@ -18,7 +18,7 @@ RSpec.describe "TOON spec encode fixtures" do
       JSON.parse(File.read(path)).fetch("tests").each_with_index do |fixture, index|
         it "matches test ##{index}" do
           input = fixture.fetch("input")
-          pending "objects inside arrays are not encoded yet" if holds_object_in_array.call(input)
+          pending "objects as list items are not encoded yet" if holds_object_in_array.call(input) && fixture["expected"].to_s.match?(/^ *-(?: |$)/)
           pending "keyed tabular form is not encoded yet" if fixture["expected"].to_s.match?(/\[\d+:/)
 
           encoder = ToonFu::Encoder.new(**fixture.fetch("options", {}).transform_keys(option_names))

@@ -103,6 +103,10 @@ RSpec.describe ToonFu::Encoder do
         expect { encoder.encode({at: Object.new}) }.to raise_error(ToonFu::Error, /Object/)
       end
 
+      it "names table fields by the string form of symbol keys" do
+        expect(encoder.encode({users: [{id: 1, name: "Ada"}, {id: 2, name: "Bo"}]})).to eq("users[2]{id,name}:\n  1,Ada\n  2,Bo")
+      end
+
       it "refuses a value it cannot encode inside an array" do
         expect { encoder.encode({tags: [Object.new]}) }.to raise_error(ToonFu::Error, /Object/)
       end

@@ -19,8 +19,8 @@ module ToonFu
     end
 
     # @param value [Hash, Array, nil, true, false, Integer, Float, String]
-    #   hash keys are encoded by their +to_s+; an array holds either only
-    #   scalars or only arrays of scalars
+    #   hash keys are encoded by their +to_s+; an array holds only scalars,
+    #   only arrays of scalars, or hashes uniform enough for tabular form
     # @return [String]
     # @raise [Error] when the value has no TOON representation
     def encode(value)
