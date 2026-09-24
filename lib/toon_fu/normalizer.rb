@@ -8,10 +8,7 @@ module ToonFu
       raise Error, "cannot encode a BasicObject" unless Kernel === value
       return core(value) unless value.respond_to?(:as_toon)
 
-      converted = value.as_toon
-      raise Error, "cannot encode a circular reference through #{value.class}" if converted.equal?(value)
-
-      call(converted)
+      call(value.as_toon)
     end
 
     private

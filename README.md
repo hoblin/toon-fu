@@ -107,7 +107,7 @@ Everything else raises `ToonFu::Error` — including a `Struct` or `Data` withou
 
 ## Compared with other Ruby TOON gems
 
-The only one that passes every spec fixture.
+The only one that passes every spec fixture: toon-fu passes all 179 encode fixtures; the table compares the 154 that use default options, which every gem can run.
 
 | Gem | Spec fixtures passed | Speed vs toon-fu |
 |---|---:|---:|
@@ -131,7 +131,11 @@ BUNDLE_GEMFILE=benchmark/Gemfile bundle install
 BUNDLE_GEMFILE=benchmark/Gemfile bundle exec ruby benchmark/run.rb
 ```
 
-To see where toon-fu itself spends time and allocates, `benchmark/profile.rb ["workload name"]` prints a stackprof CPU profile and memory_profiler allocation sites for one workload.
+To see where toon-fu itself spends time and allocates, profile one workload (CPU by stackprof, allocation sites by memory_profiler):
+
+```bash
+BUNDLE_GEMFILE=benchmark/Gemfile bundle exec ruby benchmark/profile.rb "table, 1000 rows"
+```
 
 ## Versioning
 
