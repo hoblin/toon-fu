@@ -16,8 +16,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: |
-          latest=$(curl -fsSL https://api.github.com/repos/toon-format/spec/releases/latest | jq -r .tag_name | sed -E 's/^v([0-9]+\.[0-9]+).*/\1/')
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view -R toon-format/spec --json tagName -q .tagName)
+          latest=${tag#v}
+          latest=${latest%.*}
           ours=$(ruby -r ./lib/toon_fu/version -e 'print ToonFu::VERSION[/\A\d+\.\d+/]')
           if [ "$ours" != "$latest" ]; then
             echo "::error::toon-fu implements spec $ours, latest is $latest"
