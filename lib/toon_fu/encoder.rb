@@ -14,16 +14,17 @@ module ToonFu
       raise ArgumentError, "delimiter must be one of #{DELIMITERS.inspect}, got #{delimiter.inspect}" unless DELIMITERS.include?(delimiter)
       raise ArgumentError, "indent_size must be a positive Integer, got #{indent_size.inspect}" unless indent_size.is_a?(Integer) && indent_size.positive?
 
+      @delimiter = delimiter
       @indent = " " * indent_size
-      @strings = StringLiteral.new(delimiter)
     end
 
-    # @param value [Hash, nil, true, false, Integer, Float, String] hash keys
-    #   are encoded by their +to_s+
+    # @param value [Hash, Array, nil, true, false, Integer, Float, String]
+    #   hash keys are encoded by their +to_s+; an array holds either only
+    #   scalars or only arrays of scalars
     # @return [String]
     # @raise [Error] when the value has no TOON representation
     def encode(value)
-      Writer.new(@strings, @indent).write(value)
+      Writer.new(@delimiter, @indent).write(value)
     end
   end
 end

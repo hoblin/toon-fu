@@ -2,15 +2,21 @@
 
 module ToonFu
   class Writer
-    def initialize(strings, indent)
-      @strings = strings
+    def initialize(delimiter, indent)
+      @delimiter = delimiter
+      @marker = (delimiter == ",") ? "" : delimiter
+      @strings = StringLiteral.new(delimiter)
       @unit = indent
       @indent = ""
       @lines = []
     end
 
     def write(value)
-      value.is_a?(Hash) ? object(value) : @lines << scalar(value)
+      case value
+      when Hash then object(value)
+      when Array then array("", value)
+      else @lines << scalar(value)
+      end
       @lines.join("\n")
     end
 
@@ -18,14 +24,36 @@ module ToonFu
 
     def object(hash)
       hash.each do |key, value|
-        field = "#{@strings.key(key.to_s)}:"
-        if value.is_a?(Hash)
-          line(field)
+        name = @strings.key(key.to_s)
+        case value
+        when Hash
+          line("#{name}:")
           nested { object(value) }
-        else
-          line("#{field} #{scalar(value)}")
+        when Array then array(name, value)
+        else line("#{name}: #{scalar(value)}")
         end
       end
+    end
+
+    def array(name, values)
+      if values.empty?
+        line(name.empty? ? "[]" : "#{name}: []")
+      elsif values.all?(Array)
+        line("#{name}#{header(values)}")
+        nested { values.each { |inner| line("- #{inline(inner)}") } }
+      else
+        line("#{name}#{inline(values)}")
+      end
+    end
+
+    def inline(values)
+      return header(values) if values.empty?
+
+      "#{header(values)} #{values.map { |value| scalar(value) }.join(@delimiter)}"
+    end
+
+    def header(values)
+      "[#{values.size}#{@marker}]:"
     end
 
     def line(text)
