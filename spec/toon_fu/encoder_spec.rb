@@ -95,6 +95,10 @@ RSpec.describe ToonFu::Encoder do
         expect(encoder.encode({2 => "x"})).to eq('"2": x')
       end
 
+      it "leaves dotted keys unquoted" do
+        expect(encoder.encode({"a.b" => 1})).to eq("a.b: 1")
+      end
+
       it "refuses a value it cannot encode inside a hash" do
         expect { encoder.encode({at: Object.new}) }.to raise_error(ToonFu::Error, /Object/)
       end

@@ -26,18 +26,18 @@ module ToonFu
       return scalar(value) unless value.is_a?(Hash)
 
       lines = []
-      object(value, lines, 0)
+      object(value, lines, "")
       lines.join("\n")
     end
 
     private
 
-    def object(hash, lines, depth)
+    def object(hash, lines, indent)
       hash.each do |key, value|
-        prefix = "#{@indent * depth}#{@strings.key(key.to_s)}:"
+        prefix = "#{indent}#{@strings.key(key.to_s)}:"
         if value.is_a?(Hash)
           lines << prefix
-          object(value, lines, depth + 1)
+          object(value, lines, indent + @indent)
         else
           lines << "#{prefix} #{scalar(value)}"
         end
