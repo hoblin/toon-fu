@@ -1,5 +1,7 @@
 # toon-fu
 
+[![Spec drift](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml/badge.svg)](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml)
+
 [TOON](https://github.com/toon-format/spec) (Token-Oriented Object Notation) for Ruby.
 
 Written from the specification, with the reference test fixtures as the conformance suite.
