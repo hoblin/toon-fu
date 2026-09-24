@@ -112,10 +112,10 @@ The only one that passes every spec fixture: toon-fu passes all 179 encode fixtu
 | Gem | Spec fixtures passed | Speed vs toon-fu |
 |---|---:|---:|
 | **toon-fu** | **154 / 154** | **1.00×** |
-| sorbet-toon 0.1.0 | 119 / 154 | 0.61× |
+| sorbet-toon 0.1.0 | 119 / 154 | 0.59× |
 | toon-ruby 0.1.1 | 117 / 154 | 0.62× |
-| toon_my_json 0.1.0 | 57 / 154 | 1.65× |
-| toon-format 0.1.2 | 45 / 154 | 1.20× |
+| toon_my_json 0.1.0 | 57 / 154 | 1.68× |
+| toon-format 0.1.2 | 45 / 154 | 1.18× |
 
 The Ruby TOON encoders with more than 10,000 downloads, measured by [`benchmark/run.rb`](benchmark/run.rb) on Ruby 3.4.10 (2026-09-24). **Spec fixtures** are the spec's own encode fixtures that use default options. **Speed** is the geometric mean of encodes per second over five workloads — tables of 100 and 1000 rows, nested objects, a list of mixed objects, strings needing quotes — relative to toon-fu.
 
