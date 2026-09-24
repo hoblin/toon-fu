@@ -23,35 +23,7 @@ module ToonFu
     # @return [String]
     # @raise [Error] when the value has no TOON representation
     def encode(value)
-      return scalar(value) unless value.is_a?(Hash)
-
-      lines = []
-      object(value, lines, "")
-      lines.join("\n")
-    end
-
-    private
-
-    def object(hash, lines, indent)
-      hash.each do |key, value|
-        prefix = "#{indent}#{@strings.key(key.to_s)}:"
-        if value.is_a?(Hash)
-          lines << prefix
-          object(value, lines, indent + @indent)
-        else
-          lines << "#{prefix} #{scalar(value)}"
-        end
-      end
-    end
-
-    def scalar(value)
-      case value
-      when nil then "null"
-      when true, false, Integer then value.to_s
-      when Float then FloatLiteral.new(value).to_s
-      when String then @strings.encode(value)
-      else raise Error, "cannot encode #{value.class}"
-      end
+      Writer.new(@strings, @indent).write(value)
     end
   end
 end
