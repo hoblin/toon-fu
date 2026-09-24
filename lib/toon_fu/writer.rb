@@ -39,8 +39,8 @@ module ToonFu
       if values.empty?
         line(name.empty? ? "[]" : "#{name}: []")
       elsif (fields = Fields.of(values))
-        line("#{name}[#{values.size}#{@marker}]#{field_list(fields)}:")
-        nested { values.each { |row| line(fields.cells(row).map { |cell| scalar(cell) }.join(@delimiter)) } }
+        line("#{name}#{header(values, fields)}")
+        nested { values.each { |element| line(row(fields.cells(element))) } }
       elsif values.all?(Array)
         line("#{name}#{header(values)}")
         nested { values.each { |inner| line("- #{inline(inner)}") } }
@@ -52,15 +52,19 @@ module ToonFu
     def inline(values)
       return header(values) if values.empty?
 
-      "#{header(values)} #{values.map { |value| scalar(value) }.join(@delimiter)}"
+      "#{header(values)} #{row(values)}"
     end
 
-    def header(values)
-      "[#{values.size}#{@marker}]:"
+    def row(values)
+      values.map { |value| scalar(value) }.join(@delimiter)
+    end
+
+    def header(values, fields = nil)
+      "[#{values.size}#{@marker}]#{field_list(fields) if fields}:"
     end
 
     def field_list(fields)
-      names = fields.map { |key, nested| "#{@strings.key(key.to_s)}#{field_list(nested) if nested}" }
+      names = fields.columns.map { |key, nested| "#{@strings.key(key.to_s)}#{field_list(nested) if nested}" }
       "{#{names.join(@delimiter)}}"
     end
 

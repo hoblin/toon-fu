@@ -2,36 +2,29 @@
 
 module ToonFu
   class Fields
-    include Enumerable
+    attr_reader :columns
 
     def self.of(rows)
-      new(rows) if tabular?(rows)
-    end
-
-    def self.tabular?(rows)
-      return false unless rows.all?(Hash)
+      return unless rows.all?(Hash)
 
       keys = rows.first.keys
-      !keys.empty? &&
-        rows.all? { |row| row.size == keys.size && keys.all? { |key| row.key?(key) } } &&
-        keys.all? { |key| column?(rows.map { |row| row[key] }) }
-    end
+      return if keys.empty?
+      return unless rows.all? { |row| row.size == keys.size && keys.all? { |key| row.key?(key) } }
 
-    def self.column?(values)
-      values.none? { |value| value.is_a?(Hash) || value.is_a?(Array) } || tabular?(values)
-    end
-
-    private_class_method :tabular?, :column?
-
-    def initialize(rows)
-      @columns = rows.first.keys.map do |key|
+      columns = keys.to_h do |key|
         values = rows.map { |row| row[key] }
-        [key, (Fields.new(values) if values.first.is_a?(Hash))]
+        next [key, nil] if values.none? { |value| value.is_a?(Hash) || value.is_a?(Array) }
+
+        nested = of(values)
+        return nil unless nested
+
+        [key, nested]
       end
+      new(columns)
     end
 
-    def each(&)
-      @columns.each(&)
+    def initialize(columns)
+      @columns = columns
     end
 
     def cells(row)
