@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
                      "The gem's MAJOR.MINOR tracks the TOON specification version; PATCH is the gem's own."
   spec.homepage = "https://github.com/hoblin/toon-fu"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.2"
+  spec.required_ruby_version = ">= 3.3"
 
   spec.metadata = {
     "source_code_uri" => "https://github.com/hoblin/toon-fu",
