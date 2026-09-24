@@ -7,6 +7,11 @@ RSpec.describe ToonFu::Encoder do
     it "rejects a delimiter the spec does not define" do
       expect { described_class.new(delimiter: ";") }.to raise_error(ArgumentError, /delimiter/)
     end
+
+    it "rejects an indent_size that is not a positive Integer" do
+      expect { described_class.new(indent_size: 0) }.to raise_error(ArgumentError, /indent_size/)
+      expect { described_class.new(indent_size: "2") }.to raise_error(ArgumentError, /indent_size/)
+    end
   end
 
   describe "#encode" do
@@ -81,6 +86,17 @@ RSpec.describe ToonFu::Encoder do
       it "leaves the other delimiters unquoted" do
         expect(described_class.new(delimiter: "|").encode("a,b")).to eq("a,b")
         expect(described_class.new(delimiter: "\t").encode("a,b")).to eq("a,b")
+      end
+    end
+
+    context "with hashes" do
+      it "encodes symbol and integer keys by their string form" do
+        expect(encoder.encode({id: 1})).to eq("id: 1")
+        expect(encoder.encode({2 => "x"})).to eq('"2": x')
+      end
+
+      it "refuses a value it cannot encode inside a hash" do
+        expect { encoder.encode({at: Object.new}) }.to raise_error(ToonFu::Error, /Object/)
       end
     end
 

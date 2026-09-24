@@ -9,17 +9,42 @@ module ToonFu
     #   strings containing it are quoted
     # @param indent_size [Integer] spaces per nesting level
     # @raise [ArgumentError] when the delimiter is not one of {DELIMITERS}
+    #   or indent_size is not a positive Integer
     def initialize(delimiter: ",", indent_size: 2)
       raise ArgumentError, "delimiter must be one of #{DELIMITERS.inspect}, got #{delimiter.inspect}" unless DELIMITERS.include?(delimiter)
+      raise ArgumentError, "indent_size must be a positive Integer, got #{indent_size.inspect}" unless indent_size.is_a?(Integer) && indent_size.positive?
 
-      @indent_size = indent_size
+      @indent = " " * indent_size
       @strings = StringLiteral.new(delimiter)
     end
 
-    # @param value [nil, true, false, Integer, Float, String]
+    # @param value [Hash, nil, true, false, Integer, Float, String] hash keys
+    #   are encoded by their +to_s+
     # @return [String]
     # @raise [Error] when the value has no TOON representation
     def encode(value)
+      return scalar(value) unless value.is_a?(Hash)
+
+      lines = []
+      object(value, lines, 0)
+      lines.join("\n")
+    end
+
+    private
+
+    def object(hash, lines, depth)
+      hash.each do |key, value|
+        prefix = "#{@indent * depth}#{@strings.key(key.to_s)}:"
+        if value.is_a?(Hash)
+          lines << prefix
+          object(value, lines, depth + 1)
+        else
+          lines << "#{prefix} #{scalar(value)}"
+        end
+      end
+    end
+
+    def scalar(value)
       case value
       when nil then "null"
       when true, false, Integer then value.to_s
