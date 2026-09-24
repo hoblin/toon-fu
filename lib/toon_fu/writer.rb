@@ -42,8 +42,8 @@ module ToonFu
 
     def array(name, values)
       listed = name.empty? && @hyphen
-      if values.empty?
-        line(listed ? header(values) : empty_array(name))
+      if values.empty? && !listed
+        line(name.empty? ? "[]" : "#{name}: []")
       elsif !listed && (fields = Fields.of(values))
         line("#{name}#{header(values, fields)}")
         nested { values.each { |element| line(row(fields.cells(element))) } }
@@ -57,15 +57,15 @@ module ToonFu
 
     def item(element)
       @hyphen = @indent
-      element.is_a?(Array) ? array("", element) : nested { value(element) }
+      case element
+      when Array then array("", element)
+      when Hash then nested { object(element) }
+      else line(scalar(element))
+      end
       return unless @hyphen
 
       @lines << "#{@hyphen}-"
       @hyphen = nil
-    end
-
-    def empty_array(name)
-      name.empty? ? "[]" : "#{name}: []"
     end
 
     def inline(values)
