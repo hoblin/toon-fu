@@ -8,19 +8,24 @@ module ToonFu
       @strings = StringLiteral.new(delimiter)
       @unit = indent
       @indent = ""
+      @hyphen = nil
       @lines = []
     end
 
     def write(value)
-      case value
-      when Hash then object(value)
-      when Array then array("", value)
-      else @lines << scalar(value)
-      end
+      value(value)
       @lines.join("\n")
     end
 
     private
+
+    def value(value)
+      case value
+      when Hash then object(value)
+      when Array then array("", value)
+      else line(scalar(value))
+      end
+    end
 
     def object(hash)
       hash.each do |key, value|
@@ -36,17 +41,31 @@ module ToonFu
     end
 
     def array(name, values)
-      if values.empty?
+      listed = name.empty? && @hyphen
+      if values.empty? && !listed
         line(name.empty? ? "[]" : "#{name}: []")
-      elsif (fields = Fields.of(values))
+      elsif !listed && (fields = Fields.of(values))
         line("#{name}#{header(values, fields)}")
         nested { values.each { |element| line(row(fields.cells(element))) } }
-      elsif values.all?(Array)
-        line("#{name}#{header(values)}")
-        nested { values.each { |inner| line("- #{inline(inner)}") } }
-      else
+      elsif values.none? { |value| value.is_a?(Hash) || value.is_a?(Array) }
         line("#{name}#{inline(values)}")
+      else
+        line("#{name}#{header(values)}")
+        nested { values.each { |element| item(element) } }
       end
+    end
+
+    def item(element)
+      @hyphen = @indent
+      case element
+      when Array then array("", element)
+      when Hash then nested { object(element) }
+      else line(scalar(element))
+      end
+      return unless @hyphen
+
+      @lines << "#{@hyphen}-"
+      @hyphen = nil
     end
 
     def inline(values)
@@ -69,7 +88,12 @@ module ToonFu
     end
 
     def line(text)
-      @lines << "#{@indent}#{text}"
+      if @hyphen
+        @lines << "#{@hyphen}- #{text}"
+        @hyphen = nil
+      else
+        @lines << "#{@indent}#{text}"
+      end
     end
 
     def nested

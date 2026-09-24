@@ -5,9 +5,6 @@ require "json"
 RSpec.describe "TOON spec encode fixtures" do
   paths = Dir[File.expand_path("../toon-spec/tests/fixtures/encode/*.json", __dir__)].sort
   option_names = {"delimiter" => :delimiter, "indentSize" => :indent_size}
-  holds_object_in_array = lambda do |value|
-    value.is_a?(Hash) ? value.each_value.any?(&holds_object_in_array) : value.is_a?(Array) && value.flatten.any?(Hash)
-  end
 
   it "finds the fixtures (run `git submodule update --init` if this fails)" do
     expect(paths).not_to be_empty
@@ -18,7 +15,6 @@ RSpec.describe "TOON spec encode fixtures" do
       JSON.parse(File.read(path)).fetch("tests").each_with_index do |fixture, index|
         it "matches test ##{index}" do
           input = fixture.fetch("input")
-          pending "objects as list items are not encoded yet" if holds_object_in_array.call(input) && fixture["expected"].to_s.match?(/^ *-(?: |$)/)
           pending "keyed tabular form is not encoded yet" if fixture["expected"].to_s.match?(/\[\d+:/)
 
           encoder = ToonFu::Encoder.new(**fixture.fetch("options", {}).transform_keys(option_names))
