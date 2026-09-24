@@ -4,7 +4,7 @@ require "json"
 
 RSpec.describe "TOON spec encode fixtures" do
   paths = Dir[File.expand_path("../toon-spec/tests/fixtures/encode/*.json", __dir__)].sort
-  option_names = {"delimiter" => :delimiter, "indentSize" => :indent}
+  option_names = {"delimiter" => :delimiter, "indentSize" => :indent_size}
 
   it "finds the fixtures (run `git submodule update --init` if this fails)" do
     expect(paths).not_to be_empty

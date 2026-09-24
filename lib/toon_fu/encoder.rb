@@ -7,12 +7,12 @@ module ToonFu
 
     # @param delimiter [String] the document delimiter, one of {DELIMITERS};
     #   strings containing it are quoted
-    # @param indent [Integer] spaces per nesting level
+    # @param indent_size [Integer] spaces per nesting level
     # @raise [ArgumentError] when the delimiter is not one of {DELIMITERS}
-    def initialize(delimiter: ",", indent: 2)
+    def initialize(delimiter: ",", indent_size: 2)
       raise ArgumentError, "delimiter must be one of #{DELIMITERS.inspect}, got #{delimiter.inspect}" unless DELIMITERS.include?(delimiter)
 
-      @indent = indent
+      @indent_size = indent_size
       @strings = StringLiteral.new(delimiter)
     end
 
