@@ -45,7 +45,8 @@ WORKLOADS.each do |title, value|
     end
     x.compare!
   end
-  report.entries.each { |entry| speeds[entry.label] << entry.ips / report.entries.first.ips }
+  baseline = report.entries.find { |entry| entry.label == "toon-fu" }.ips
+  report.entries.each { |entry| speeds[entry.label] << entry.ips / baseline }
 end
 
 puts "\nSpeed relative to toon-fu, geometric mean over #{WORKLOADS.size} workloads"

@@ -103,7 +103,7 @@ For ActiveRecord models, pass `record.as_json` (or define `as_toon`).
 | objects with `to_hash`, `to_ary`, `to_str` | the value they convert to |
 | objects with `as_toon` | whatever `as_toon` returns, encoded in turn |
 
-Everything else raises `ToonFu::Error` — including a `Struct` or `Data` without `as_toon`, and circular references.
+Everything else raises `ToonFu::Error` — including a `Struct` or `Data` without `as_toon`, circular references, and nesting too deep for the stack.
 
 ## Compared with other Ruby TOON gems
 

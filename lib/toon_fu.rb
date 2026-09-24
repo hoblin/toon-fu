@@ -38,6 +38,6 @@ module ToonFu
     (options.empty? ? DEFAULT_ENCODER : Encoder.new(**options)).encode(value)
   end
 
-  DEFAULT_ENCODER = Encoder.new
+  DEFAULT_ENCODER = Ractor.make_shareable(Encoder.new)
   private_constant :DEFAULT_ENCODER
 end

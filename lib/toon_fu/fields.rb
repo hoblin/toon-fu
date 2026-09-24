@@ -23,13 +23,15 @@ module ToonFu
       new(columns)
     end
 
+    attr_reader :paths
+
     def initialize(columns)
       @columns = columns
+      @paths = columns.flat_map { |key, nested| nested ? nested.paths.map { |path| [key, *path] } : [[key]] }
     end
 
-    def cells(row, into = [])
-      @columns.each { |key, nested| nested ? nested.cells(row[key], into) : into << row[key] }
-      into
+    def cells(row)
+      @paths.map { |path| path.reduce(row) { |node, key| node[key] } }
     end
   end
 end

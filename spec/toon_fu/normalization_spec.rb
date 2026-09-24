@@ -147,6 +147,15 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
     it "refuses keys that collide once converted to strings", :aggregate_failures do
       expect { encode({:a => 1, "a" => 2}) }.to raise_error(ToonFu::Error, /duplicate key "a"/)
       expect { encode({1 => "a", "1" => "b"}) }.to raise_error(ToonFu::Error, /duplicate key "1"/)
+      expect { encode({"é".b => 1, "é" => 2}) }.to raise_error(ToonFu::Error, /duplicate key "é"/)
+      expect { encode({"é".encode("ISO-8859-1") => 1, "é" => 2}) }.to raise_error(ToonFu::Error, /duplicate key "é"/)
+    end
+
+    it "refuses equal string keys in a hash that compares keys by identity" do
+      hash = {}.compare_by_identity
+      hash["a".dup] = 1
+      hash["a".dup] = 2
+      expect { encode(hash) }.to raise_error(ToonFu::Error, /duplicate key "a"/)
     end
 
     it "refuses keys other than strings, symbols and integers" do
@@ -158,8 +167,33 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       list << list
       hash = {}
       hash[:self] = hash
+      named = {}
+      named["self"] = named
       expect { encode(list) }.to raise_error(ToonFu::Error, /circular/)
       expect { encode(hash) }.to raise_error(ToonFu::Error, /circular/)
+      expect { encode(named) }.to raise_error(ToonFu::Error, /circular/)
+    end
+
+    it "refuses nesting too deep for the stack" do
+      deep = 1
+      100_000.times { deep = [deep] }
+      expect { encode(deep) }.to raise_error(ToonFu::Error, /nesting too deep/)
+    end
+  end
+
+  context "with a value that needs converting after plain ones" do
+    it "keeps every entry before and after it", :aggregate_failures do
+      expect(encode({"a" => 1, "b" => :x, "c" => 3})).to eq("a: 1\nb: x\nc: 3")
+      expect(encode(["a", :b, "c"])).to eq("[3]: a,b,c")
+    end
+  end
+
+  context "with Hash and Array subclasses" do
+    it "encodes their contents as a plain Hash or Array would", :aggregate_failures do
+      lookup = Class.new(Hash) { def [](key) = "overridden" }
+      list = Class.new(Array)
+      expect(encode([lookup[{"id" => 1}], lookup[{"id" => 2}]])).to eq("[2]{id}:\n  1\n  2")
+      expect(encode({"ids" => list[1, 2]})).to eq("ids[2]: 1,2")
     end
   end
 
@@ -172,6 +206,12 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
 
     it "reads binary strings holding valid UTF-8 as UTF-8" do
       expect(encode({name: "café".b})).to eq("name: café")
+    end
+
+    it "applies the same rules to string keys", :aggregate_failures do
+      expect(encode({"café".encode("ISO-8859-1") => 1})).to eq('"café": 1')
+      expect(encode({"café".b => 1})).to eq('"café": 1')
+      expect { encode({"\xFF".b => 1}) }.to raise_error(ToonFu::Error, /UTF-8/)
     end
 
     it "refuses bytes that are not valid UTF-8", :aggregate_failures do

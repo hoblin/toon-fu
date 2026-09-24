@@ -41,30 +41,39 @@ module ToonFu
     end
 
     def array(values)
-      copy = nil
-      values.each_with_index do |element, index|
-        normal = call(element)
-        next if copy.nil? && normal.equal?(element)
+      return values.map { |element| call(element) } unless values.instance_of?(Array)
 
-        copy ||= values.first(index)
-        copy << normal
+      copy = nil
+      index = 0
+      while index < values.size
+        element = values[index]
+        normal = call(element)
+        unless copy.nil? && normal.equal?(element)
+          copy ||= values.first(index)
+          copy << normal
+        end
+        index += 1
       end
       copy || values
     end
 
     def object(hash)
-      return rebuild(hash) unless hash.all? { |key, _| key.is_a?(String) }
+      return rebuild(hash) unless plain?(hash)
 
       copy = nil
       hash.each do |key, value|
-        name = utf8(key)
         normal = call(value)
-        next if copy.nil? && name.equal?(key) && normal.equal?(value)
+        next if copy.nil? && normal.equal?(value)
 
         copy ||= hash.take_while { |pair_key, _| !pair_key.equal?(key) }.to_h
-        copy[name] = normal
+        copy[key] = normal
       end
       copy || hash
+    end
+
+    def plain?(hash)
+      hash.instance_of?(Hash) && !hash.compare_by_identity? &&
+        hash.all? { |key, _| key.instance_of?(String) && key.encoding == Encoding::UTF_8 && key.valid_encoding? }
     end
 
     def rebuild(hash)
