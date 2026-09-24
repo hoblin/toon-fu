@@ -14,6 +14,12 @@ TOON is a compact, readable encoding of the JSON data model for LLM prompts: ind
 
 Every Ruby TOON gem on RubyGems was published in late 2025 and stopped at spec 1.2, three major versions behind. They leave strings starting with `#` or `+` unquoted, which a current reader takes for a comment or a number, and shift dates by a day east of Greenwich. toon-fu tracks the spec: its version is the spec version, and a daily check flags a newer spec.
 
+Yes, we know:
+
+[![xkcd 927: Standards](https://imgs.xkcd.com/comics/standards.png)](https://xkcd.com/927/)
+
+<sub>[xkcd #927 "Standards"](https://xkcd.com/927/) by Randall Munroe, [CC BY-NC 2.5](https://creativecommons.org/licenses/by-nc/2.5/).</sub>
+
 ## Getting started
 
 Add it to your Gemfile:
