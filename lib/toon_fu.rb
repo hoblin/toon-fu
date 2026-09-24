@@ -19,8 +19,9 @@ module ToonFu
   #   ToonFu.encode("a,b", delimiter: "|") # => "a,b"
   #   ToonFu.encode(1e-7)                  # => "1e-7"
   #   ToonFu.encode({user: {id: 1}})       # => "user:\n  id: 1"
+  #   ToonFu.encode({tags: ["a", "b"]})    # => "tags[2]: a,b"
   #
-  # @param value [Hash, nil, true, false, Integer, Float, String]
+  # @param value [Hash, Array, nil, true, false, Integer, Float, String]
   # @param options [Hash] see {Encoder#initialize}
   # @return [String]
   # @raise [Error] when the value has no TOON representation
