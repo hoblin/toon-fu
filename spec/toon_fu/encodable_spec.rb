@@ -34,7 +34,11 @@ RSpec.describe ToonFu::Encodable do
   end
 
   it "leaves a to_toon a class defines itself in place" do
-    custom = Class.new(Hash) { def to_toon(**) = "custom" }
+    custom = Class.new do
+      def to_toon(**) = "custom"
+
+      include ToonFu::Encodable
+    end
     expect(custom.new.to_toon).to eq("custom")
   end
 end
