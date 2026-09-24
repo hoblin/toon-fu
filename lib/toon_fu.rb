@@ -15,13 +15,14 @@ module ToonFu
 
   # Encodes a value as TOON.
   #
-  #   ToonFu.encode("hello")               # => "hello"
-  #   ToonFu.encode("a,b")                 # => "\"a,b\""
-  #   ToonFu.encode("a,b", delimiter: "|") # => "a,b"
-  #   ToonFu.encode(1e-7)                  # => "1e-7"
-  #   ToonFu.encode({user: {id: 1}})       # => "user:\n  id: 1"
-  #   ToonFu.encode({tags: ["a", "b"]})    # => "tags[2]: a,b"
-  #   ToonFu.encode([{id: 1}, {id: 2}])    # => "[2]{id}:\n  1\n  2"
+  #   ToonFu.encode("hello")                # => "hello"
+  #   ToonFu.encode("a,b")                  # => "\"a,b\""
+  #   ToonFu.encode("a,b", delimiter: "|")  # => "a,b"
+  #   ToonFu.encode(1e-7)                   # => "1e-7"
+  #   ToonFu.encode({user: {id: 1}})        # => "user:\n  id: 1"
+  #   ToonFu.encode({tags: ["a", "b"]})     # => "tags[2]: a,b"
+  #   ToonFu.encode([{id: 1}, {id: 2}])     # => "[2]{id}:\n  1\n  2"
+  #   ToonFu.encode({a: {x: 1}, b: {x: 2}}) # => "[2:]{x}:\n  a: 1\n  b: 2"
   #
   # @param value [Hash, Array, nil, true, false, Integer, Float, String]
   # @param options [Hash] see {Encoder#initialize}

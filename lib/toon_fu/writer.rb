@@ -21,7 +21,7 @@ module ToonFu
 
     def value(value)
       case value
-      when Hash then object(value)
+      when Hash then mapping("", value)
       when Array then array("", value)
       else line(scalar(value))
       end
@@ -31,12 +31,22 @@ module ToonFu
       hash.each do |key, value|
         name = @strings.key(key.to_s)
         case value
-        when Hash
-          line("#{name}:")
-          nested { object(value) }
+        when Hash then mapping(name, value)
         when Array then array(name, value)
         else line("#{name}: #{scalar(value)}")
         end
+      end
+    end
+
+    def mapping(name, hash)
+      if hash.size >= 2 && (fields = Fields.of(hash.values))
+        line("#{name}#{header(hash.size, fields, keyed: true)}")
+        nested { hash.each { |key, entry| line("#{@strings.key(key.to_s)}: #{row(fields.cells(entry))}") } }
+      elsif name.empty?
+        object(hash)
+      else
+        line("#{name}:")
+        nested { object(hash) }
       end
     end
 
@@ -45,12 +55,12 @@ module ToonFu
       if values.empty? && !listed
         line(name.empty? ? "[]" : "#{name}: []")
       elsif !listed && (fields = Fields.of(values))
-        line("#{name}#{header(values, fields)}")
+        line("#{name}#{header(values.size, fields)}")
         nested { values.each { |element| line(row(fields.cells(element))) } }
       elsif values.none? { |value| value.is_a?(Hash) || value.is_a?(Array) }
         line("#{name}#{inline(values)}")
       else
-        line("#{name}#{header(values)}")
+        line("#{name}#{header(values.size)}")
         nested { values.each { |element| item(element) } }
       end
     end
@@ -69,17 +79,17 @@ module ToonFu
     end
 
     def inline(values)
-      return header(values) if values.empty?
+      return header(values.size) if values.empty?
 
-      "#{header(values)} #{row(values)}"
+      "#{header(values.size)} #{row(values)}"
     end
 
     def row(values)
       values.map { |value| scalar(value) }.join(@delimiter)
     end
 
-    def header(values, fields = nil)
-      "[#{values.size}#{@marker}]#{field_list(fields) if fields}:"
+    def header(count, fields = nil, keyed: false)
+      "[#{count}#{":" if keyed}#{@marker}]#{field_list(fields) if fields}:"
     end
 
     def field_list(fields)

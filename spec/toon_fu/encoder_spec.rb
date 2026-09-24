@@ -99,6 +99,10 @@ RSpec.describe ToonFu::Encoder do
         expect(encoder.encode({"a.b" => 1})).to eq("a.b: 1")
       end
 
+      it "names keyed table entries and fields by the string form of symbol keys" do
+        expect(encoder.encode({alpha: {port: 1}, beta: {port: 2}})).to eq("[2:]{port}:\n  alpha: 1\n  beta: 2")
+      end
+
       it "refuses a value it cannot encode inside a hash" do
         expect { encoder.encode({at: Object.new}) }.to raise_error(ToonFu::Error, /Object/)
       end

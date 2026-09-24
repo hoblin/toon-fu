@@ -5,7 +5,7 @@ module ToonFu
     attr_reader :columns
 
     def self.of(rows)
-      return unless rows.all?(Hash)
+      return if rows.empty? || !rows.all?(Hash)
 
       keys = rows.first.keys
       return if keys.empty?
