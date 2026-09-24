@@ -27,8 +27,9 @@ module ToonFu
       @columns = columns
     end
 
-    def cells(row)
-      @columns.flat_map { |key, nested| nested ? nested.cells(row[key]) : [row[key]] }
+    def cells(row, into = [])
+      @columns.each { |key, nested| nested ? nested.cells(row[key], into) : into << row[key] }
+      into
     end
   end
 end

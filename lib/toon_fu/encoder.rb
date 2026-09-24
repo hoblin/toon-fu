@@ -47,6 +47,8 @@ module ToonFu
     #   own object
     def encode(value)
       Writer.new(@delimiter, @indent).write(Normalizer.new.call(value))
+    rescue SystemStackError
+      raise Error, "cannot encode a circular reference or nesting too deep"
     end
   end
 end

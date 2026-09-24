@@ -4,6 +4,13 @@ module ToonFu
   class FloatLiteral
     DECIMAL_RANGE = (1e-6...1e21)
 
+    def self.format(value)
+      plain = value.to_s
+      return new(value).to_s if plain.include?("e") || !value.finite?
+
+      value.zero? ? "0" : plain.delete_suffix(".0")
+    end
+
     def initialize(value)
       @value = value
     end
