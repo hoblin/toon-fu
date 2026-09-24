@@ -12,7 +12,9 @@ RSpec.describe ToonFu::Encodable do
     TrueClass => true,
     FalseClass => false,
     NilClass => nil,
-    Time => Time.utc(2026, 5, 31, 10)
+    Time => Time.utc(2026, 5, 31, 10),
+    Date => Date.new(2026, 5, 31),
+    DateTime => DateTime.new(2026, 5, 31, 10, 0, 0, "+03:00")
   }.each do |klass, value|
     it "gives #{klass} a to_toon equal to ToonFu.encode" do
       expect(value.to_toon(delimiter: "|")).to eq(ToonFu.encode(value, delimiter: "|"))

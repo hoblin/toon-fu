@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "date"
+
 require_relative "toon_fu/version"
 require_relative "toon_fu/encoder"
 require_relative "toon_fu/float_literal"
