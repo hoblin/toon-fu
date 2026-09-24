@@ -32,9 +32,10 @@ ENCODERS.each do |name, encode|
   puts format("  %-14s %3d / %d", name, passed, FIXTURES.size)
 end
 
+speeds = Hash.new { |hash, name| hash[name] = [] }
 WORKLOADS.each do |title, value|
   puts "\n#{title}"
-  Benchmark.ips do |x|
+  report = Benchmark.ips do |x|
     x.config(time: 2, warmup: 1)
     ENCODERS.each do |name, encode|
       encode.call(value)
@@ -44,4 +45,10 @@ WORKLOADS.each do |title, value|
     end
     x.compare!
   end
+  report.entries.each { |entry| speeds[entry.label] << entry.ips / report.entries.first.ips }
+end
+
+puts "\nSpeed relative to toon-fu, geometric mean over #{WORKLOADS.size} workloads"
+speeds.each do |name, ratios|
+  puts format("  %-14s %.2fx", name, ratios.map { |ratio| Math.log(ratio) }.sum.then { |sum| Math.exp(sum / ratios.size) })
 end
