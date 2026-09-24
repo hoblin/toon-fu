@@ -105,6 +105,31 @@ For ActiveRecord models, pass `record.as_json` (or define `as_toon`).
 
 Everything else raises `ToonFu::Error` — including a `Struct` or `Data` without `as_toon`, and circular references.
 
+## Compared with other Ruby TOON gems
+
+The Ruby TOON encoders with more than 10,000 downloads, run by [`benchmark/run.rb`](benchmark/run.rb) on Ruby 3.4.10, 2026-09-24. **Spec fixtures** counts the spec's own encode fixtures (the ones using default options) that each gem reproduces exactly; the rest is encodes per second, higher is better.
+
+| | toon-fu 4.1.0 | toon-ruby 0.1.1 | sorbet-toon 0.1.0 | toon_my_json 0.1.0 | toon-format 0.1.2 |
+|---|---:|---:|---:|---:|---:|
+| **Spec fixtures (of 154)** | **154** | 117 | 119 | 57 | 45 |
+| table, 100 rows | 959 | 671 | 625 | 2,215 | 1,264 |
+| table, 1000 rows | 94 | 67 | 63 | 230 | 127 |
+| nested objects | 59,321 | 42,885 | 45,083 | 127,537 | 84,122 |
+| list of mixed objects | 2,466 | 1,603 | 1,775 | 2,805 | 2,915 |
+| strings needing quotes | 5,376 | 4,008 | 3,502 | 9,232 | 7,469 |
+
+What the fixture gaps mean in practice:
+
+- **toon-ruby, sorbet-toon** — spec 1.2: `#tag` and `+1` stay unquoted (a current reader sees a comment and a number), arrays of objects with nested columns fall back to lists instead of tables with field groups, no keyed tables. Unknown objects are not refused: toon-ruby writes `null`, sorbet-toon writes `"#<Foo:0x…>"`. toon-ruby also shifts `Date` by a day east of Greenwich.
+- **toon_my_json, toon-format** — not valid TOON: the table header lands on its own line (`users:` then `[2]{id,name}:`), toon-format writes `[2,]` and misplaces the rows, and nested objects in table cells become broken text. Their speed comes partly from not doing the spec's work.
+
+Rerun it:
+
+```bash
+BUNDLE_GEMFILE=benchmark/Gemfile bundle install
+BUNDLE_GEMFILE=benchmark/Gemfile bundle exec ruby benchmark/run.rb
+```
+
 ## Versioning
 
 The gem version tracks the TOON specification it implements:
