@@ -107,7 +107,7 @@ Everything else raises `ToonFu::Error` — including a `Struct` or `Data` withou
 
 ## Compared with other Ruby TOON gems
 
-The only one that passes every spec fixture — and faster than every other gem that writes valid TOON.
+The only one that passes every spec fixture.
 
 | Gem | Spec fixtures passed | Speed vs toon-fu |
 |---|---:|---:|
