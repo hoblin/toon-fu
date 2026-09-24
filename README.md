@@ -1,10 +1,19 @@
 # toon-fu
 
+[![CI](https://github.com/hoblin/toon-fu/actions/workflows/ci.yml/badge.svg)](https://github.com/hoblin/toon-fu/actions/workflows/ci.yml)
 [![Spec drift](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml/badge.svg)](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml)
 
-[TOON](https://github.com/toon-format/spec) (Token-Oriented Object Notation) for Ruby: a compact, readable encoding of JSON data for LLM prompts. Written from the specification, with the spec's reference fixtures as the conformance suite.
+[TOON](https://toonformat.dev/) (Token-Oriented Object Notation) encoder for Ruby, versioned by the spec it implements.
 
 `toon-spec: 4.1`
+
+## What is this?
+
+TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode fixture of TOON 4.1 passes.
+
+## Why?
+
+Every Ruby TOON gem on RubyGems was published in late 2025 and stopped at spec 1.2, three major versions behind. They leave strings starting with `#` or `+` unquoted, which a current reader takes for a comment or a number, and shift dates by a day east of Greenwich. toon-fu tracks the spec: its version is the spec version, and a daily check flags a newer spec.
 
 ## Getting started
 
@@ -105,6 +114,26 @@ The gem version tracks the TOON specification it implements:
 Pin to the spec line you need: `gem "toon-fu", "~> 4.1.0"`. A daily check turns the badge above red when a newer spec is released.
 
 Release notes: [GitHub releases](https://github.com/hoblin/toon-fu/releases).
+
+## Development
+
+```bash
+git clone --recurse-submodules git@github.com:hoblin/toon-fu.git
+cd toon-fu
+bundle install
+bundle exec rspec        # unit specs + the spec's conformance fixtures
+bundle exec standardrb   # lint
+```
+
+The TOON spec is a git submodule at `spec/toon-spec`, pinned to its release tag; the fixtures run from there.
+
+## Releasing
+
+1. Bump `lib/toon_fu/version.rb` in a pull request and merge it.
+2. `git tag vX.Y.Z && git push origin vX.Y.Z` on `main`.
+3. Approve the `release` deployment in Actions.
+
+The [release workflow](.github/workflows/release.yml) checks the tag matches the version, runs CI, and publishes to RubyGems via [trusted publishing](https://guides.rubygems.org/trusted-publishing/).
 
 ## License
 
