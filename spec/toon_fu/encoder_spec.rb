@@ -113,8 +113,21 @@ RSpec.describe ToonFu::Encoder do
         expect(encoder.encode({users: [{id: 1, name: "Ada"}, {id: 2, name: "Bo"}]})).to eq("users[2]{id,name}:\n  1,Ada\n  2,Bo")
       end
 
-      it "lists items one indent level deep whatever the indent size" do
-        expect(described_class.new(indent_size: 4).encode({items: [{a: 1, b: 2}, [1]]})).to eq("items[2]:\n    - a: 1\n        b: 2\n    - [1]: 1")
+      it "scales list-item depths by the indent size" do
+        items = [{meta: {a: 1}, id: 2}, {u: [{id: 1}], n: 1}, [{x: 1}, {y: 2}], "s"]
+        expect(described_class.new(indent_size: 4).encode({items:})).to eq(<<~TOON.chomp)
+          items[4]:
+              - meta:
+                      a: 1
+                  id: 2
+              - u[1]{id}:
+                      1
+                  n: 1
+              - [2]:
+                  - x: 1
+                  - y: 2
+              - s
+        TOON
       end
     end
 
