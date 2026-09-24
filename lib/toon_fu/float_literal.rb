@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ToonFu
-  class Number
+  class FloatLiteral
     DECIMAL_RANGE = (1e-6...1e21)
 
     def initialize(value)
@@ -9,9 +9,8 @@ module ToonFu
     end
 
     def to_s
-      return @value.to_s if @value.is_a?(Integer)
+      return "null" unless @value.finite?
       return "0" if @value.zero?
-      return @value.to_i.to_s if @value.abs < 1e21 && @value == @value.truncate
 
       DECIMAL_RANGE.cover?(@value.abs) ? decimal : exponential
     end
@@ -19,10 +18,15 @@ module ToonFu
     private
 
     def decimal
+      plain = @value.to_s
+      return plain.delete_suffix(".0") unless plain.include?("e")
+
       digits, point = significand
       text =
         if point <= 0
           "0.#{"0" * -point}#{digits}"
+        elsif point >= digits.length
+          digits.ljust(point, "0")
         else
           "#{digits[0, point]}.#{digits[point..]}"
         end

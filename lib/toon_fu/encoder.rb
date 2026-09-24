@@ -22,8 +22,8 @@ module ToonFu
     def encode(value)
       case value
       when nil then "null"
-      when true, false then value.to_s
-      when Integer, Float then Number.new(value).to_s
+      when true, false, Integer then value.to_s
+      when Float then FloatLiteral.new(value).to_s
       when String then @strings.encode(value)
       else raise Error, "cannot encode #{value.class}"
       end

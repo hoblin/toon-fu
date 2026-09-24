@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 require_relative "toon_fu/version"
-require_relative "toon_fu/number"
-require_relative "toon_fu/string_literal"
 require_relative "toon_fu/encoder"
+require_relative "toon_fu/float_literal"
+require_relative "toon_fu/string_literal"
 
 # TOON (Token-Oriented Object Notation) for Ruby.
 module ToonFu
   class Error < StandardError; end
 
-  private_constant :Number, :StringLiteral
+  private_constant :FloatLiteral, :StringLiteral
 
   # Encodes a value as TOON.
   #
