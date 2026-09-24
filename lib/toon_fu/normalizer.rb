@@ -9,6 +9,7 @@ module ToonFu
     end
 
     def call(value)
+      raise Error, "cannot encode a BasicObject" unless Kernel === value
       return core(value) unless value.respond_to?(:as_toon)
 
       within(value) { call(value.as_toon) }
@@ -29,7 +30,7 @@ module ToonFu
     end
 
     def convert(value)
-      if defined?(DateTime) && value.is_a?(DateTime) then timestamp(value.to_time)
+      if defined?(DateTime) && value.is_a?(DateTime) then date_time(value)
       elsif defined?(Date) && value.is_a?(Date) then value.iso8601
       elsif defined?(BigDecimal) && value.is_a?(BigDecimal) then DecimalLiteral.new(value)
       elsif value.respond_to?(:to_hash) then within(value) { call(value.to_hash) }
@@ -53,7 +54,7 @@ module ToonFu
       when String then utf8(key)
       when Symbol then utf8(key.name)
       when Integer then key.to_s
-      else raise Error, "cannot encode a #{key.class} key; use String, Symbol or Integer keys"
+      else raise Error, "cannot encode #{key.class} keys; use String, Symbol or Integer keys"
       end
     end
 
@@ -69,6 +70,11 @@ module ToonFu
     def timestamp(time)
       moment = time.strftime("%Y-%m-%dT%H:%M:%S.%9N").sub(TRAILING_FRACTION_ZEROS, "")
       "#{moment}#{time.utc? ? "Z" : time.strftime("%:z")}"
+    end
+
+    def date_time(value)
+      moment, offset = value.iso8601(9).split(/(?=[+-]\d\d:\d\d\z)/)
+      "#{moment.sub(TRAILING_FRACTION_ZEROS, "")}#{offset}"
     end
 
     def utf8(string)

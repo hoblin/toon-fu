@@ -14,7 +14,7 @@ module ToonFu
 
     def write(value)
       value(value)
-      @lines.join("\n")
+      @lines.join("\n").force_encoding(Encoding::UTF_8)
     end
 
     private

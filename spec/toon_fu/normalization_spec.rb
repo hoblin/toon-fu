@@ -35,8 +35,9 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect(encode({at: Time.new(2026, 5, 31, 10, 0, 5.102r, "-05:00")})).to eq('at: "2026-05-31T10:00:05.102-05:00"')
     end
 
-    it "writes a datetime like a time" do
+    it "writes a datetime like a time, keeping its calendar day", :aggregate_failures do
       expect(encode({at: DateTime.new(2026, 5, 31, 10, 0, 5.25r, "+03:00")})).to eq('at: "2026-05-31T10:00:05.25+03:00"')
+      expect(encode({at: DateTime.new(1000, 1, 1)})).to eq('at: "1000-01-01T00:00:00+00:00"')
     end
 
     it "writes integers of any size as their exact digits" do
@@ -47,6 +48,11 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect(encode({amount: BigDecimal("12345678901234567890.123")})).to eq("amount: 12345678901234567890.123")
       expect(encode({amount: BigDecimal(100)})).to eq("amount: 100")
       expect(encode({amount: BigDecimal("-0")})).to eq("amount: 0")
+    end
+
+    it "writes a BigDecimal outside the canonical decimal range in exponent form, like a Float", :aggregate_failures do
+      expect(encode({amount: BigDecimal("1e30")})).to eq("amount: 1e+30")
+      expect(encode({amount: BigDecimal("-1.25e-7")})).to eq("amount: -1.25e-7")
     end
 
     it "writes a non-finite BigDecimal as null", :aggregate_failures do
@@ -64,8 +70,9 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect(encode({a: shared, b: shared})).to eq("[2:]{x}:\n  a: 1\n  b: 1")
     end
 
-    it "always returns UTF-8" do
+    it "always returns UTF-8", :aggregate_failures do
       expect(encode(42).encoding).to eq(Encoding::UTF_8)
+      expect(encode({}).encoding).to eq(Encoding::UTF_8)
     end
   end
 
@@ -118,11 +125,19 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect { encode(echo) }.to raise_error(ToonFu::Error, /circular/)
       expect { encode(ping) }.to raise_error(ToonFu::Error, /circular/)
     end
+
+    it "refuses a hook whose fresh result leads back to its own object" do
+      node = Struct.new(:parent, :children) { def as_toon = {parent:, children: children.dup} }
+      root = node.new(nil, [])
+      root.children << node.new(root, [])
+      expect { encode(root) }.to raise_error(ToonFu::Error, /circular/)
+    end
   end
 
   context "with values the spec does not model" do
-    it "refuses unknown objects and points to as_toon" do
+    it "refuses unknown objects and points to as_toon", :aggregate_failures do
       expect { encode({at: Object.new}) }.to raise_error(ToonFu::Error, /Object.*as_toon/)
+      expect { encode({at: BasicObject.new}) }.to raise_error(ToonFu::Error, /BasicObject/)
     end
 
     it "refuses structs and data objects", :aggregate_failures do
