@@ -35,6 +35,9 @@ module ToonFu
   # @return [String]
   # @raise [Error] see {Encoder#encode}
   def self.encode(value, **options)
-    Encoder.new(**options).encode(value)
+    (options.empty? ? DEFAULT_ENCODER : Encoder.new(**options)).encode(value)
   end
+
+  DEFAULT_ENCODER = Ractor.make_shareable(Encoder.new)
+  private_constant :DEFAULT_ENCODER
 end

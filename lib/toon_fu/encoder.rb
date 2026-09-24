@@ -44,9 +44,11 @@ module ToonFu
     #   Symbol or Integer, and keys that collide once converted to strings;
     #   for strings that are not valid UTF-8; for circular references,
     #   including an +as_toon+ or implicit conversion that leads back to its
-    #   own object
+    #   own object, and for nesting too deep for the stack
     def encode(value)
       Writer.new(@delimiter, @indent).write(Normalizer.new.call(value))
+    rescue SystemStackError
+      raise Error, "cannot encode a circular reference or nesting too deep"
     end
   end
 end

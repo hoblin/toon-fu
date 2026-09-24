@@ -118,7 +118,7 @@ module ToonFu
       case value
       when nil then "null"
       when true, false, Integer then value.to_s
-      when Float then FloatLiteral.new(value).to_s
+      when Float then FloatLiteral.format(value)
       when DecimalLiteral then value.to_s
       when String then @strings.encode(value)
       else raise Error, "cannot encode #{value.class}"
