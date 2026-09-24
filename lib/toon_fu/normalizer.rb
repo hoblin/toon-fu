@@ -53,7 +53,7 @@ module ToonFu
     end
 
     def object(hash)
-      return rebuild(hash) unless hash.each_key.all?(String)
+      return rebuild(hash) unless hash.all? { |key, _| key.is_a?(String) }
 
       copy = nil
       hash.each do |key, value|

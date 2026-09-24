@@ -8,7 +8,9 @@ module ToonFu
       plain = value.to_s
       return new(value).to_s if plain.include?("e") || !value.finite?
 
-      value.zero? ? "0" : plain.delete_suffix(".0")
+      return "0" if value.zero?
+
+      plain.end_with?(".0") ? plain.delete_suffix(".0") : plain
     end
 
     def initialize(value)
