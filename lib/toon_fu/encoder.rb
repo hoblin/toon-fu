@@ -18,12 +18,35 @@ module ToonFu
       @indent = " " * indent_size
     end
 
-    # @param value [Hash, Array, nil, true, false, Integer, Float, String]
-    #   nested in any combination; hash keys are encoded by their +to_s+
-    # @return [String]
-    # @raise [Error] when the value has no TOON representation
+    # Encodes a value as TOON.
+    #
+    # Accepts the JSON data model plus these Ruby types, nested in any
+    # combination:
+    #
+    # - +Hash+ with String, Symbol or Integer keys, which become strings;
+    #   +Array+; +Set+ as an array
+    # - +String+ in UTF-8, in an encoding that transcodes to it, or binary
+    #   bytes that are valid UTF-8; +Symbol+ as its name
+    # - +Integer+ of any size as its exact digits; +Float+ and +BigDecimal+,
+    #   with NaN and infinities as +null+, +BigDecimal+ as its exact digits;
+    #   +true+, +false+, +nil+
+    # - +Date+ as an ISO 8601 date; +Time+ and +DateTime+ as ISO 8601
+    #   timestamps keeping their offset, fraction digits up to the last
+    #   non-zero one
+    # - objects that declare themselves a Hash, Array or String through
+    #   Ruby's implicit conversions: +to_hash+, +to_ary+, +to_str+
+    # - any object responding to +as_toon+: its result is encoded instead,
+    #   ahead of the mappings above
+    #
+    # @param value [Object] one of the types above
+    # @return [String] UTF-8
+    # @raise [Error] for any other value type; for keys other than String,
+    #   Symbol or Integer, and keys that collide once converted to strings;
+    #   for strings that are not valid UTF-8; for circular references,
+    #   including an +as_toon+ or implicit conversion that leads back to its
+    #   own object
     def encode(value)
-      Writer.new(@delimiter, @indent).write(value)
+      Writer.new(@delimiter, @indent).write(Normalizer.new.call(value))
     end
   end
 end
