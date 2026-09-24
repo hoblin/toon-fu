@@ -2,22 +2,21 @@
 
 module ToonFu
   class Normalizer
+    TRAILING_FRACTION_ZEROS = /\.?0+\z/
+
     def initialize
       @path = {}.compare_by_identity
     end
 
     def call(value)
-      return plain(value) unless value.respond_to?(:as_toon)
+      return core(value) unless value.respond_to?(:as_toon)
 
-      converted = value.as_toon
-      raise Error, "#{value.class}#as_toon returned the object itself" if converted.equal?(value)
-
-      call(converted)
+      within(value) { call(value.as_toon) }
     end
 
     private
 
-    def plain(value)
+    def core(value)
       case value
       when nil, true, false, Integer, Float then value
       when String then utf8(value)
@@ -25,31 +24,31 @@ module ToonFu
       when Hash then within(value) { object(value) }
       when Array, Set then within(value) { value.map { |element| call(element) } }
       when Time then timestamp(value)
-      else host(value)
+      else convert(value)
       end
     end
 
-    def host(value)
+    def convert(value)
       if defined?(DateTime) && value.is_a?(DateTime) then timestamp(value.to_time)
       elsif defined?(Date) && value.is_a?(Date) then value.iso8601
       elsif defined?(BigDecimal) && value.is_a?(BigDecimal) then DecimalLiteral.new(value)
       elsif value.respond_to?(:to_hash) then within(value) { call(value.to_hash) }
       elsif value.respond_to?(:to_ary) then within(value) { call(value.to_ary) }
-      elsif value.respond_to?(:to_str) then call(value.to_str)
+      elsif value.respond_to?(:to_str) then within(value) { call(value.to_str) }
       else raise Error, "cannot encode #{value.class}; convert it first or define #as_toon"
       end
     end
 
     def object(hash)
       hash.each_with_object({}) do |(key, value), result|
-        name = key(key)
+        name = key_name(key)
         raise Error, "duplicate key #{name.inspect} after converting keys to strings" if result.key?(name)
 
         result[name] = call(value)
       end
     end
 
-    def key(key)
+    def key_name(key)
       case key
       when String then utf8(key)
       when Symbol then utf8(key.name)
@@ -59,7 +58,7 @@ module ToonFu
     end
 
     def within(container)
-      raise Error, "cannot encode a circular reference" if @path.key?(container)
+      raise Error, "cannot encode a circular reference through #{container.class}" if @path.key?(container)
 
       @path[container] = true
       result = yield
@@ -68,7 +67,8 @@ module ToonFu
     end
 
     def timestamp(time)
-      time.iso8601(9).sub(/\.?0+(?=Z|[+-]\d\d:\d\d\z)/, "")
+      moment = time.strftime("%Y-%m-%dT%H:%M:%S.%9N").sub(TRAILING_FRACTION_ZEROS, "")
+      "#{moment}#{time.utc? ? "Z" : time.strftime("%:z")}"
     end
 
     def utf8(string)

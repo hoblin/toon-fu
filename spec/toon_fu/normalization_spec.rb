@@ -15,27 +15,57 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect(encode({ids: Set[1, 2]})).to eq("ids[2]: 1,2")
     end
 
-    it "writes a date as its ISO 8601 date, whatever the time zone" do
-      expect(encode({on: Date.new(2026, 5, 31)})).to eq("on: 2026-05-31")
+    context "east of Greenwich" do
+      around do |example|
+        zone = ENV["TZ"]
+        ENV["TZ"] = "Asia/Tokyo"
+        example.run
+      ensure
+        ENV["TZ"] = zone
+      end
+
+      it "writes a date as its ISO 8601 date, not the previous day" do
+        expect(encode({on: Date.new(2026, 5, 31)})).to eq("on: 2026-05-31")
+      end
     end
 
-    it "writes a time as ISO 8601 with its offset and only non-zero fraction digits" do
+    it "writes a time as ISO 8601 with its offset and fraction digits up to the last non-zero one", :aggregate_failures do
       expect(encode({at: Time.utc(2026, 5, 31, 10)})).to eq('at: "2026-05-31T10:00:00Z"')
       expect(encode({at: Time.new(2026, 5, 31, 10, 0, 5.12r, "+03:00")})).to eq('at: "2026-05-31T10:00:05.12+03:00"')
+      expect(encode({at: Time.new(2026, 5, 31, 10, 0, 5.102r, "-05:00")})).to eq('at: "2026-05-31T10:00:05.102-05:00"')
     end
 
     it "writes a datetime like a time" do
-      expect(encode({at: DateTime.new(2026, 5, 31, 10, 0, 0, "+03:00")})).to eq('at: "2026-05-31T10:00:00+03:00"')
+      expect(encode({at: DateTime.new(2026, 5, 31, 10, 0, 5.25r, "+03:00")})).to eq('at: "2026-05-31T10:00:05.25+03:00"')
     end
 
-    it "writes a BigDecimal as its exact digits" do
+    it "writes integers of any size as their exact digits" do
+      expect(encode({n: 2**100})).to eq("n: 1267650600228229401496703205376")
+    end
+
+    it "writes a BigDecimal as its exact digits", :aggregate_failures do
       expect(encode({amount: BigDecimal("12345678901234567890.123")})).to eq("amount: 12345678901234567890.123")
+      expect(encode({amount: BigDecimal(100)})).to eq("amount: 100")
       expect(encode({amount: BigDecimal("-0")})).to eq("amount: 0")
-      expect(encode({amount: BigDecimal("NaN")})).to eq("amount: null")
     end
 
-    it "unifies symbol and string keys before choosing a form" do
+    it "writes a non-finite BigDecimal as null", :aggregate_failures do
+      expect(encode({amount: BigDecimal("NaN")})).to eq("amount: null")
+      expect(encode({amount: BigDecimal("Infinity")})).to eq("amount: null")
+    end
+
+    it "unifies symbol and string keys before choosing a form", :aggregate_failures do
       expect(encode([{id: 1}, {"id" => 2}])).to eq("[2]{id}:\n  1\n  2")
+      expect(encode({a: {x: 1}, b: {"x" => 2}})).to eq("[2:]{x}:\n  a: 1\n  b: 2")
+    end
+
+    it "accepts the same object twice when it is not circular" do
+      shared = {x: 1}
+      expect(encode({a: shared, b: shared})).to eq("[2:]{x}:\n  a: 1\n  b: 1")
+    end
+
+    it "always returns UTF-8" do
+      expect(encode(42).encoding).to eq(Encoding::UTF_8)
     end
   end
 
@@ -50,10 +80,13 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect(encode({record:, list:, name:})).to eq("record:\n  id: 1\nlist[2]: 1,2\nname: Ada")
     end
 
-    it "refuses an object whose implicit conversion leads back to itself" do
+    it "refuses an implicit conversion that leads back to its own object", :aggregate_failures do
       loop = Object.new
       def loop.to_hash = {self: self}
+      echo = Object.new
+      def echo.to_str = self
       expect { encode(loop) }.to raise_error(ToonFu::Error, /circular/)
+      expect { encode(echo) }.to raise_error(ToonFu::Error, /circular/)
     end
 
     it "does not guess from explicit conversions like to_h" do
@@ -75,10 +108,15 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect(encode({on: date})).to eq("on: end of May")
     end
 
-    it "refuses a hook that returns its own object" do
+    it "refuses hooks that lead back to their own object", :aggregate_failures do
       echo = Object.new
       def echo.as_toon = self
-      expect { encode(echo) }.to raise_error(ToonFu::Error, /as_toon returned the object itself/)
+      ping = Object.new
+      pong = Object.new
+      ping.define_singleton_method(:as_toon) { pong }
+      pong.define_singleton_method(:as_toon) { ping }
+      expect { encode(echo) }.to raise_error(ToonFu::Error, /circular/)
+      expect { encode(ping) }.to raise_error(ToonFu::Error, /circular/)
     end
   end
 
@@ -87,20 +125,21 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect { encode({at: Object.new}) }.to raise_error(ToonFu::Error, /Object.*as_toon/)
     end
 
-    it "refuses structs and data objects" do
+    it "refuses structs and data objects", :aggregate_failures do
       expect { encode(Struct.new(:a).new(1)) }.to raise_error(ToonFu::Error)
       expect { encode(Data.define(:a).new(a: 1)) }.to raise_error(ToonFu::Error)
     end
 
-    it "refuses keys that collide once converted to strings" do
+    it "refuses keys that collide once converted to strings", :aggregate_failures do
       expect { encode({:a => 1, "a" => 2}) }.to raise_error(ToonFu::Error, /duplicate key "a"/)
+      expect { encode({1 => "a", "1" => "b"}) }.to raise_error(ToonFu::Error, /duplicate key "1"/)
     end
 
     it "refuses keys other than strings, symbols and integers" do
       expect { encode({1.5 => "x"}) }.to raise_error(ToonFu::Error, /Float key/)
     end
 
-    it "refuses circular references" do
+    it "refuses circular references", :aggregate_failures do
       list = []
       list << list
       hash = {}
@@ -108,15 +147,10 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect { encode(list) }.to raise_error(ToonFu::Error, /circular/)
       expect { encode(hash) }.to raise_error(ToonFu::Error, /circular/)
     end
-
-    it "accepts the same object twice when it is not circular" do
-      shared = {x: 1}
-      expect(encode({a: shared, b: shared})).to eq("[2:]{x}:\n  a: 1\n  b: 1")
-    end
   end
 
   context "with string encodings" do
-    it "transcodes other encodings to UTF-8" do
+    it "transcodes other encodings to UTF-8", :aggregate_failures do
       output = encode({name: "café".encode("ISO-8859-1")})
       expect(output).to eq("name: café")
       expect(output.encoding).to eq(Encoding::UTF_8)
@@ -126,13 +160,15 @@ RSpec.describe ToonFu, ".encode with Ruby host types" do
       expect(encode({name: "café".b})).to eq("name: café")
     end
 
-    it "refuses bytes that are not valid UTF-8" do
+    it "refuses bytes that are not valid UTF-8", :aggregate_failures do
       expect { encode({name: "\xFF".b}) }.to raise_error(ToonFu::Error, /UTF-8/)
       expect { encode({name: (+"\xC3(").force_encoding(Encoding::UTF_8)}) }.to raise_error(ToonFu::Error, /UTF-8/)
+      expect { encode({name: (+"\x82").force_encoding(Encoding::Shift_JIS)}) }.to raise_error(ToonFu::Error, /UTF-8/)
     end
 
-    it "refuses an unpaired surrogate" do
+    it "refuses an unpaired surrogate in any encoding", :aggregate_failures do
       expect { encode({name: (+"\xED\xA0\x80").force_encoding(Encoding::UTF_8)}) }.to raise_error(ToonFu::Error, /UTF-8/)
+      expect { encode({name: (+"\x00\xD8").force_encoding(Encoding::UTF_16LE)}) }.to raise_error(ToonFu::Error, /UTF-8/)
     end
   end
 end
