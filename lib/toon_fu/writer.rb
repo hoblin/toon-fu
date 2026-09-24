@@ -29,7 +29,7 @@ module ToonFu
 
     def object(hash)
       hash.each do |key, value|
-        name = @strings.key(key.to_s)
+        name = @strings.key(key)
         case value
         when Hash then mapping(name, value)
         when Array then array(name, value)
@@ -41,7 +41,7 @@ module ToonFu
     def mapping(name, hash)
       if hash.size >= 2 && (fields = Fields.of(hash.values))
         line("#{name}#{header(hash.size, fields, keyed: true)}")
-        nested { hash.each { |key, entry| line("#{@strings.key(key.to_s)}: #{row(fields.cells(entry))}") } }
+        nested { hash.each { |key, entry| line("#{@strings.key(key)}: #{row(fields.cells(entry))}") } }
       elsif name.empty?
         object(hash)
       else
@@ -93,7 +93,7 @@ module ToonFu
     end
 
     def field_list(fields)
-      names = fields.columns.map { |key, nested| "#{@strings.key(key.to_s)}#{field_list(nested) if nested}" }
+      names = fields.columns.map { |key, nested| "#{@strings.key(key)}#{field_list(nested) if nested}" }
       "{#{names.join(@delimiter)}}"
     end
 
@@ -119,6 +119,7 @@ module ToonFu
       when nil then "null"
       when true, false, Integer then value.to_s
       when Float then FloatLiteral.new(value).to_s
+      when DecimalLiteral then value.to_s
       when String then @strings.encode(value)
       else raise Error, "cannot encode #{value.class}"
       end
