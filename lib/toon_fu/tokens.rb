@@ -10,6 +10,7 @@ module ToonFu
     SURROUNDING_SPACES = /\A +| +\z/
     UNTIL_CELL_END = Encoder::DELIMITERS.to_h { |d| [d, /[^"#{Regexp.escape(d)}]+/] }.freeze
     UNTIL_FIELD_END = Encoder::DELIMITERS.to_h { |d| [d, /[^"{}#{Regexp.escape(d)}]+/] }.freeze
+    UNTIL_FOREIGN = Encoder::DELIMITERS.to_h { |d| [d, /[^"#{Regexp.escape((Encoder::DELIMITERS - [d]).join)}]+/] }.freeze
 
     def self.index_of(text, pattern, stops)
       scanner = StringScanner.new(text)

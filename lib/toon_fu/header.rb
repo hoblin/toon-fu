@@ -113,8 +113,8 @@ module ToonFu
 
     def repeated(fields)
       names = fields.map(&:first)
-      duplicate = names.find { |name| names.count(name) > 1 }
-      return duplicate if duplicate
+      duplicate = names.tally.find { |_, count| count > 1 }
+      return duplicate.first if duplicate
 
       fields.filter_map { |_, nested| nested && repeated(nested) }.first
     end

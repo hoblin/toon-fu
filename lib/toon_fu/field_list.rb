@@ -16,8 +16,10 @@ module ToonFu
 
       entries = []
       Tokens.split_fields(@text, @delimiter).each do |entry|
+        return nil if foreign?(entry)
+
         name, nested = split(entry)
-        return nil if name.nil? || foreign?(name)
+        return nil if name.nil?
 
         entries << [name, nested]
       end
@@ -27,9 +29,11 @@ module ToonFu
     private
 
     # A field list is split by the bracket segment's delimiter alone, so
-    # another delimiter left unquoted in a name is a header defect (§6).
-    def foreign?(name)
-      (Encoder::DELIMITERS - [@delimiter]).any? { |other| name.include?(other) }
+    # another delimiter left unquoted in an entry is a header defect (§6).
+    # Quoting protects it, which is how the encoder emits {id,"a|b"}.
+    def foreign?(entry)
+      others = Encoder::DELIMITERS - [@delimiter]
+      Tokens.index_of(entry, Tokens::UNTIL_FOREIGN.fetch(@delimiter), others.join) ? true : false
     end
 
     def split(entry)

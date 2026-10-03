@@ -6,7 +6,7 @@ module ToonFu
     # @param strict [Boolean] whether to enforce the spec's strict-mode
     #   checks; with +false+ duplicate keys resolve last-write-wins, leading
     #   spaces that are not a multiple of indent_size are accepted, and a
-    #   tab in indentation is accepted and counts towards no depth
+    #   tab in indentation is accepted and counts as one level
     # @param indent_size [Integer] spaces per nesting level
     # @raise [ArgumentError] when strict is not a boolean or indent_size is
     #   not a positive Integer

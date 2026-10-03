@@ -30,7 +30,6 @@ module ToonFu
     COMMENT = /\A *#/
     TRAILING_SPACES = / +\z/
     BLANK = /\A\s*\z/
-    TABS = /\A\t+/
     INDENTATION = /\A[ \t]*/
 
     def initialize(text, strict, indent_size)
@@ -88,9 +87,9 @@ module ToonFu
     # Non-strict mode accepts a tab as indentation (§12), where each tab
     # counts as one level; strict mode rejects it.
     def depth(line, number)
-      raise Error, "cannot decode a line indented with a tab on line #{number}: #{line}" if @strict && TABS.match?(line)
-
       indent = line[INDENTATION]
+      raise Error, "cannot decode a line indented with a tab on line #{number}: #{line}" if @strict && indent.include?("\t")
+
       spaces = indent.count(" ")
       raise Error, "cannot decode an indentation of #{spaces} spaces on line #{number}, not a multiple of #{@indent_size}: #{line}" if @strict && !(spaces % @indent_size).zero?
 
