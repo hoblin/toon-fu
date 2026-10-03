@@ -7,7 +7,6 @@ module ToonFu
     ESCAPE = /\\(?:(["\\nrt])|u([0-9a-fA-F]{4})|(.|\z))/m
     UNESCAPES = {'"' => '"', "\\" => "\\", "n" => "\n", "r" => "\r", "t" => "\t"}.freeze
     SURROGATES = (0xd800..0xdfff)
-    EXACT_INTEGERS = 2**Float::MANT_DIG
 
     def self.key(text)
       text.start_with?('"') ? quoted(text) : text
@@ -67,17 +66,13 @@ module ToonFu
       float = Float(text)
       raise Error, "cannot decode #{text} as a Float without losing its magnitude" if float.infinite? || (float.zero? && nonzero?(text))
 
-      integral?(float) ? Integer(float) : float
-    end
-
-    def self.integral?(float)
-      float == float.truncate && float.abs <= EXACT_INTEGERS
+      float.zero? ? 0.0 : float
     end
 
     def self.nonzero?(text)
       text.split(/e/i).first.match?(/[1-9]/)
     end
 
-    private_class_method :quoted, :unescape, :codepoint, :number, :nonzero?, :integral?
+    private_class_method :quoted, :unescape, :codepoint, :number, :nonzero?
   end
 end

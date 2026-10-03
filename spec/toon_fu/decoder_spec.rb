@@ -30,6 +30,19 @@ RSpec.describe ToonFu::Decoder do
         expect(decoder.decode("a: #{10**40}")).to eq({"a" => 10**40})
       end
 
+      it "takes the type from the token, not the value", :aggregate_failures do
+        expect(decoder.decode("250")).to be_an(Integer)
+        expect(decoder.decode("2.5e2")).to be_a(Float)
+        expect(decoder.decode("-1E+03")).to be_a(Float)
+        expect(decoder.decode("2.5e2")).to eq(250)
+      end
+
+      it "normalizes a negative zero", :aggregate_failures do
+        expect(decoder.decode("-0")).to eql(0)
+        expect(decoder.decode("-0.0").to_s).to eq("0.0")
+        expect(decoder.decode("-0e1").to_s).to eq("0.0")
+      end
+
       it "keeps a zero written with an exponent" do
         expect(decoder.decode("0e1")).to eq(0)
       end

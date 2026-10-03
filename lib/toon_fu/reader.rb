@@ -10,6 +10,8 @@ module ToonFu
     TABS = /\A\t+/
     BLANK = /\A\s*\z/
     INDENTATION = /\A[ \t]*/
+    PLAIN = /[^":]+/
+    QUOTED = /"(?:[^"\\]|\\.)*"/
 
     def initialize(strict, indent_size)
       @strict = strict
@@ -97,21 +99,18 @@ module ToonFu
     end
 
     def trim(text)
-      text.sub(/\A */, "").sub(/ +\z/, "")
+      text = text.dup
+      nil while text.delete_prefix!(" ")
+      nil while text.delete_suffix!(" ")
+      text
     end
 
     def colon_index(line)
-      index = 0
-      while index < line.length
-        case line[index]
-        when '"'
-          closing = Token.closing_quote(line[index..])
-          return nil if closing.nil?
-
-          index += closing + 1
-        when ":" then return index
-        else index += 1
-        end
+      scanner = StringScanner.new(line)
+      until scanner.eos?
+        next if scanner.skip(PLAIN)
+        return scanner.charpos if scanner.peek(1) == ":"
+        return nil unless scanner.skip(QUOTED)
       end
       nil
     end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "date"
+require "strscan"
 
 require_relative "toon_fu/version"
 require_relative "toon_fu/encoder"
