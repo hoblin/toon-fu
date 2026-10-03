@@ -157,29 +157,29 @@ RSpec.describe ToonFu::Decoder do
       expect(decoder.decode("b: two")).to eq({"b" => "two"})
     end
 
-context "with a quoted token" do
-  it "unescapes it and keeps it a string", :aggregate_failures do
-    {
-      '"has, comma"' => "has, comma",
-      '"a|b"' => "a|b",
-      '"tab\\there"' => "tab\there",
-      '"say \\"hi\\""' => %(say "hi"),
-      '"back\\\\slash"' => "back\\slash",
-      '"#x"' => "#x",
-      '"-dash"' => "-dash",
-      '""' => "",
-      '" padded "' => " padded ",
-      '"a:b"' => "a:b",
-      '"{brace}"' => "{brace}",
-      '"line\\nbreak"' => "line\nbreak",
-      '"\\u00a0nbsp"' => " nbsp",
-      '"05"' => "05",
-      '"true"' => "true"
-    }.each do |token, value|
-      expect(decoder.decode("k: #{token}")).to eq({"k" => value})
-      expect(decoder.decode("#{token}: 1")).to eq({value => 1})
+    context "with a quoted token" do
+      it "unescapes it and keeps it a string", :aggregate_failures do
+        {
+          '"has, comma"' => "has, comma",
+          '"a|b"' => "a|b",
+          '"tab\\there"' => "tab\there",
+          '"say \\"hi\\""' => %(say "hi"),
+          '"back\\\\slash"' => "back\\slash",
+          '"#x"' => "#x",
+          '"-dash"' => "-dash",
+          '""' => "",
+          '" padded "' => " padded ",
+          '"a:b"' => "a:b",
+          '"{brace}"' => "{brace}",
+          '"line\\nbreak"' => "line\nbreak",
+          '"\\u00a0nbsp"' => " nbsp",
+          '"05"' => "05",
+          '"true"' => "true"
+        }.each do |token, value|
+          expect(decoder.decode("k: #{token}")).to eq({"k" => value})
+          expect(decoder.decode("#{token}: 1")).to eq({value => 1})
+        end
+      end
     end
-  end
-end
   end
 end
