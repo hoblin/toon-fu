@@ -152,6 +152,47 @@ RSpec.describe ToonFu::Decoder do
       end
     end
 
+    context "at a tabular row's depth" do
+      it "ends the rows at a line whose colon precedes the delimiter" do
+        expect { decoder.decode("a[2]{x,y}:\n  1,2\n  k: 3,4") }.to raise_error(ToonFu::Error, /1 row/)
+      end
+
+      it "keeps a row whose delimiter precedes its colon" do
+        expect(decoder.decode("a[1]{x,y}:\n  1,b: 2")).to eq({"a" => [{"x" => 1, "y" => "b: 2"}]})
+      end
+    end
+
+    context "with a keyed header carrying no field list" do
+      it "refuses it when strict" do
+        expect { decoder.decode("a[2:]: x,y") }.to raise_error(ToonFu::Error, /malformed/)
+      end
+
+      it "reads the line as a key-value pair when not strict" do
+        expect(described_class.new(strict: false).decode("a[2:]: x,y")).to eq({"a[2" => "]: x,y"})
+      end
+    end
+
+    context "with a fields-bearing header carrying inline content" do
+      it "refuses it when strict" do
+        expect { decoder.decode("a[2]{x,y}: 1,2") }.to raise_error(ToonFu::Error, /malformed/)
+      end
+
+      it "reads the line as a key-value pair when not strict" do
+        expect(described_class.new(strict: false).decode("a[2]{x,y}: 1,2")).to eq({"a[2]{x,y}" => "1,2"})
+      end
+    end
+
+    it "names the line a duplicate key repeats on", :aggregate_failures do
+      expect { decoder.decode("a[4:]{x}:\n  k: 1\n  z: 9\n  k: 2\n  w: 7") }.to raise_error(ToonFu::Error, /line 4/)
+      expect { decoder.decode("a[1]:\n  - x: 1\n    y: 2\n    z: 3\n    x: 9") }.to raise_error(ToonFu::Error, /line 5/)
+    end
+
+    it "refuses nesting past the documented limit", :aggregate_failures do
+      nest = ->(levels) { (0...levels).map { |i| "  " * i + "k#{i}:" }.join("\n") + "\n#{"  " * levels}leaf: 1" }
+      expect(decoder.decode(nest.call(100))).to be_a(Hash)
+      expect { decoder.decode(nest.call(101)) }.to raise_error(ToonFu::Error, /deeper than 100/)
+    end
+
     it "reads a document many times with one decoder" do
       expect(decoder.decode("a: 1")).to eq({"a" => 1})
       expect(decoder.decode("b: two")).to eq({"b" => "two"})
