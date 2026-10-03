@@ -201,7 +201,8 @@ RSpec.describe ToonFu::Decoder do
     it "reads inside a Ractor" do
       decoded = begin
         verbose, $VERBOSE = $VERBOSE, nil
-        Ractor.new { ToonFu.decode("x[2]: 1,2") }.take
+        ractor = Ractor.new { ToonFu.decode("x[2]: 1,2") }
+        ractor.respond_to?(:value) ? ractor.value : ractor.take
       ensure
         $VERBOSE = verbose
       end
