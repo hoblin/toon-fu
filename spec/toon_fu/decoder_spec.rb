@@ -157,6 +157,17 @@ RSpec.describe ToonFu::Decoder do
       expect(decoder.decode("b: two")).to eq({"b" => "two"})
     end
 
+    it "reads inside a Ractor" do
+      decoded = begin
+        verbose, $VERBOSE = $VERBOSE, nil
+        Ractor.new { ToonFu.decode("x[2]: 1,2") }.take
+      ensure
+        $VERBOSE = verbose
+      end
+
+      expect(decoded).to eq({"x" => [1, 2]})
+    end
+
     context "with a quoted token" do
       it "unescapes it and keeps it a string", :aggregate_failures do
         {

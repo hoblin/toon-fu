@@ -3,15 +3,15 @@
 module ToonFu
   module Tokens
     QUOTED = /"(?:[^"\\]|\\.)*"/
-    PLAIN_UNTIL = {}
+    UNTIL_COLON = /[^":]+/
+    UNTIL_BRACKET = /[^":\[]+/
+    UNTIL_BRACE = /[^"{]+/
+    BRACE = /[{}]/
+    UNTIL_CELL_END = Encoder::DELIMITERS.to_h { |d| [d, /[^"#{Regexp.escape(d)}]+/] }.freeze
+    UNTIL_FIELD_END = Encoder::DELIMITERS.to_h { |d| [d, /[^"{}#{Regexp.escape(d)}]+/] }.freeze
 
-    def self.scanner(text)
-      StringScanner.new(text)
-    end
-
-    def self.index_of(text, stops)
-      pattern = PLAIN_UNTIL[stops] ||= /[^"#{Regexp.escape(stops)}]+/
-      scanner = scanner(text)
+    def self.index_of(text, pattern, stops)
+      scanner = StringScanner.new(text)
       until scanner.eos?
         next if scanner.skip(pattern)
         return scanner.charpos if stops.include?(scanner.peek(1))
@@ -21,22 +21,22 @@ module ToonFu
     end
 
     def self.colon_index(text)
-      index_of(text, ":")
+      index_of(text, UNTIL_COLON, ":")
     end
 
     def self.bracket_index(text)
-      index = index_of(text, "[:")
+      index = index_of(text, UNTIL_BRACKET, "[:")
       (index && text[index] == "[") ? index : nil
     end
 
     def self.brace_index(text)
-      index = index_of(text, "{")
+      index = index_of(text, UNTIL_BRACE, "{")
       (index && text[index] == "{") ? index : nil
     end
 
     def self.closing_brace(text)
       depth = 0
-      scanner = scanner(text)
+      scanner = StringScanner.new(text)
       until scanner.eos?
         if scanner.skip(QUOTED)
           next
@@ -56,18 +56,18 @@ module ToonFu
       entries = []
       current = +""
       depth = 0
-      scanner = scanner(text)
+      scanner = StringScanner.new(text)
       until scanner.eos?
         if (quoted = scanner.scan(QUOTED))
           current << quoted
-        elsif depth.zero? && scanner.skip(/#{Regexp.escape(delimiter)}/)
+        elsif depth.zero? && scanner.skip(delimiter)
           entries << current
           current = +""
-        elsif (brace = scanner.scan(/[{}]/))
+        elsif (brace = scanner.scan(BRACE))
           depth += (brace == "{") ? 1 : -1
           current << brace
         else
-          current << (scanner.scan(/[^"{}#{Regexp.escape(delimiter)}]+/) || scanner.getch)
+          current << (scanner.scan(UNTIL_FIELD_END.fetch(delimiter)) || scanner.getch)
         end
       end
       entries << current
@@ -77,15 +77,15 @@ module ToonFu
     def self.split(text, delimiter)
       cells = []
       current = +""
-      scanner = scanner(text)
+      scanner = StringScanner.new(text)
       until scanner.eos?
         if (quoted = scanner.scan(QUOTED))
           current << quoted
-        elsif scanner.skip(/#{Regexp.escape(delimiter)}/)
+        elsif scanner.skip(delimiter)
           cells << current
           current = +""
         else
-          current << (scanner.scan(/[^"#{Regexp.escape(delimiter)}]+/) || scanner.getch)
+          current << (scanner.scan(UNTIL_CELL_END.fetch(delimiter)) || scanner.getch)
         end
       end
       cells << current
