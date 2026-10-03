@@ -33,10 +33,10 @@ module ToonFu
     end
 
     def root
-      first = @lines.first
+      first = content(@lines.first)
       return header_root(first) if ROOT_HEADER.match?(first)
       return trailing(1) { [] } if first == "[]"
-      return Token.decode(first) if @lines.one? && colon_index(content(first)).nil?
+      return Token.decode(first) if @lines.one? && colon_index(first).nil?
 
       object
     end

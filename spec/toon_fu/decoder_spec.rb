@@ -76,6 +76,14 @@ RSpec.describe ToonFu::Decoder do
       end
     end
 
+    context "with a root form carrying indentation" do
+      it "classifies it by its content", :aggregate_failures do
+        expect(decoder.decode("  []")).to eq([])
+        expect(decoder.decode("  hello")).to eq("hello")
+        expect(decoder.decode("  42")).to eq(42)
+      end
+    end
+
     context "with a colon before the first bracket" do
       it "reads the line as a key-value pair, not a header" do
         expect(decoder.decode("a:b[2]: x")).to eq({"a" => "b[2]: x"})
