@@ -172,7 +172,7 @@ RSpec.describe ToonFu::Decoder do
           '"a:b"' => "a:b",
           '"{brace}"' => "{brace}",
           '"line\\nbreak"' => "line\nbreak",
-          '"\\u00a0nbsp"' => " nbsp",
+          '"\u00a0nbsp"' => "\u00a0nbsp",
           '"05"' => "05",
           '"true"' => "true"
         }.each do |token, value|
