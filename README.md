@@ -111,6 +111,25 @@ For ActiveRecord models, pass `record.as_json` (or define `as_toon`).
 
 Everything else raises `ToonFu::Error` — including a `Struct` or `Data` without `as_toon`, circular references, and nesting too deep for the stack.
 
+## Reading TOON
+
+`ToonFu.decode` is landing a slice at a time ([#11](https://github.com/hoblin/toon-fu/issues/11)). Today it reads scalars, comments, blank lines and the document root — a bare value, an empty document, `[]`, and an object of `key: value` lines. Nested objects, arrays and the table forms raise until their slice lands.
+
+```ruby
+ToonFu.decode("name: Ada\nadmin: true") # => {"name" => "Ada", "admin" => true}
+ToonFu.decode("42")                     # => 42
+ToonFu.decode('"42"')                   # => "42"
+```
+
+Decoding returns the JSON data model: `Hash` with String keys, `Array`, `String`, `Integer`, `Float`, `true`, `false`, `nil`.
+
+- `strict:` — `true` (default) enforces the spec's strict-mode checks. With `false`, duplicate keys resolve last-write-wins and indentation is lenient.
+- `indent_size:` — spaces per nesting level, default `2`.
+
+A token is a number only when it matches the spec's own grammar, so `.5`, `1.`, `+1`, `05`, `Infinity` and `1_000` decode as strings, and a quoted token stays a string whatever it looks like.
+
+**Out-of-range numbers raise.** A token the grammar accepts but `Float` cannot hold without losing its magnitude — `1e400`, `1e-400` — raises `ToonFu::Error` rather than returning infinity or zero. The spec permits several policies and requires the chosen one to be documented; this one never substitutes a value you did not write. Integers are exact at any size.
+
 ## Compared with other Ruby TOON gems
 
 The only one that passes every spec fixture: toon-fu passes all 179 encode fixtures; the table compares the 154 that use default options, which every gem can run.

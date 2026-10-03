@@ -14,4 +14,14 @@ RSpec.describe ToonFu do
       expect { ToonFu.encode(users: [1]) }.to raise_error(ArgumentError, /wrap a Hash in braces/)
     end
   end
+
+  describe ".decode" do
+    it "reads a document" do
+      expect(ToonFu.decode("name: Ada")).to eq({"name" => "Ada"})
+    end
+
+    it "passes options through to the decoder" do
+      expect(ToonFu.decode("a: 1\na: 2", strict: false)).to eq({"a" => 2})
+    end
+  end
 end
