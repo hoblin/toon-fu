@@ -34,8 +34,13 @@ module ToonFu
       return broken unless (closing = @content.index("]", @bracket))
 
       return broken unless segment(@content[(@bracket + 1)...closing])
+      return broken unless tail(closing + 1)
+      # §6: a keyed header's field list is required, and a fields-bearing
+      # header carries no inline content.
+      return broken if @keyed && !fields?
+      return broken if fields? && !@inline.strip.empty?
 
-      tail(closing + 1) ? self : broken
+      self
     end
 
     def broken

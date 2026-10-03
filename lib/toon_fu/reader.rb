@@ -54,8 +54,7 @@ module ToonFu
       raise Error, "cannot decode content after the root form: #{@lines.peek.text}"
     end
 
-    def object(depth)
-      result = {}
+    def object(depth, result = {})
       while (line = @lines.peek) && line.depth >= depth
         if line.depth > depth
           orphan(line)
@@ -148,7 +147,9 @@ module ToonFu
     # structural error in strict and non-strict mode alike (§5.2, §14.2).
     def scalar_line(line, depth)
       return if line.nil? || line.depth != depth || Tokens.colon_index(line.content)
-      return if Header.parse(line.content)
+
+      header = Header.parse(line.content)
+      return if header && !header.malformed?
 
       raise Error, "cannot decode a bare token line inside a scope on line #{line.number}: #{line.text}"
     end
@@ -179,12 +180,10 @@ module ToonFu
       store(result, key, value, synthetic)
       following = @lines.peek
       span(following) if following && following.depth == depth + 1
-      descend { object(depth + 1) }.each { |name, later| store(result, name, later, synthetic) }
-      result
+      descend { object(depth + 1, result) }
     end
 
     def table(header, depth)
-      raise Error, "cannot decode a fields-bearing header carrying inline content: #{header.inline}" unless Tokens.trim(header.inline).empty?
       raise Error, "cannot decode a field name repeated in one field list: #{header.duplicate.inspect}" if @strict && header.duplicate
 
       header.keyed? ? entries(header, depth) : rows(header, depth)
@@ -192,10 +191,20 @@ module ToonFu
 
     def rows(header, depth)
       collected = descend do
-        gather(depth) { |line| row(header, line) }
+        gather(depth, stop: ->(line) { key_value_line?(line, header.delimiter) }) { |line| row(header, line) }
       end
       count(collected.length, header, "row")
       collected
+    end
+
+    # §9.3: at row depth a line whose first unquoted colon precedes its first
+    # unquoted delimiter is a key-value line, and the rows end before it.
+    def key_value_line?(line, delimiter)
+      colon = Tokens.colon_index(line.content)
+      return false if colon.nil?
+
+      cell = Tokens.index_of(line.content, Tokens::UNTIL_CELL_END.fetch(delimiter), delimiter)
+      cell.nil? || colon < cell
     end
 
     def entries(header, depth)
@@ -208,18 +217,20 @@ module ToonFu
 
             next nil
           end
-          [Tokens.key(line.content[0...colon]), row(header, line, line.content[(colon + 1)..])]
+          [Tokens.key(line.content[0...colon]), row(header, line, line.content[(colon + 1)..]), line]
         end
       end
       collected.compact!
       count(collected.length, header, "entry row")
-      collected.each { |key, value| store(result, key, value, @lines.last) }
+      collected.each { |key, value, line| store(result, key, value, line) }
       result
     end
 
-    def gather(depth)
+    def gather(depth, stop: nil)
       collected = []
       while (line = @lines.peek) && line.depth == depth
+        break if stop&.call(line)
+
         span(line) unless collected.empty?
         @lines.next
         collected << yield(line)
@@ -264,7 +275,7 @@ module ToonFu
     def width(actual, header, line)
       return unless @strict && actual != header.leaves.length
 
-      raise Error, "cannot decode #{actual} cells on line #{line.number} where the header declares #{header.leaves.length} fields"
+      raise Error, "cannot decode #{actual} cells on line #{line.number} where the header declares #{header.leaves.length} field#{"s" unless header.leaves.length == 1}"
     end
 
     def usable(header, line)

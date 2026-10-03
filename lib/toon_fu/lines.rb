@@ -58,10 +58,6 @@ module ToonFu
       line
     end
 
-    def last
-      @lines[@index - 1]
-    end
-
     def number
       peek ? peek.number : @lines.length
     end

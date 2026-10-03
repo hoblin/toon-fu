@@ -7,6 +7,7 @@ module ToonFu
     UNTIL_BRACKET = /[^":\[]+/
     UNTIL_BRACE = /[^"{]+/
     BRACE = /[{}]/
+    SURROUNDING_SPACES = /\A +| +\z/
     UNTIL_CELL_END = Encoder::DELIMITERS.to_h { |d| [d, /[^"#{Regexp.escape(d)}]+/] }.freeze
     UNTIL_FIELD_END = Encoder::DELIMITERS.to_h { |d| [d, /[^"{}#{Regexp.escape(d)}]+/] }.freeze
 
@@ -93,10 +94,7 @@ module ToonFu
     end
 
     def self.trim(text)
-      text = text.dup
-      nil while text.delete_prefix!(" ")
-      nil while text.delete_suffix!(" ")
-      text
+      text.gsub(SURROUNDING_SPACES, "")
     end
 
     def self.whole_token?(text)
