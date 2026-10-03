@@ -125,6 +125,18 @@ RSpec.describe ToonFu::Decoder do
       it "refuses leading spaces that are not a multiple of indent_size when strict" do
         expect { decoder.decode("a: 1\n   b: 2") }.to raise_error(ToonFu::Error, /multiple/)
       end
+
+      it "checks a root form's own indentation when strict", :aggregate_failures do
+        expect { decoder.decode("   hello") }.to raise_error(ToonFu::Error, /multiple/)
+        expect { decoder.decode("   []") }.to raise_error(ToonFu::Error, /multiple/)
+        expect { decoder.decode("\thello") }.to raise_error(ToonFu::Error, /tab/)
+      end
+
+      it "takes a leading tab as indentation when not strict", :aggregate_failures do
+        lenient = described_class.new(strict: false)
+        expect(lenient.decode("\thello")).to eq("hello")
+        expect(lenient.decode("\ta: 1")).to eq({"a" => 1})
+      end
     end
 
     it "reads a document many times with one decoder" do

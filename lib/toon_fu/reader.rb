@@ -9,6 +9,7 @@ module ToonFu
     ROOT_HEADER = /\A#{BRACKETS}/
     TABS = /\A\t+/
     BLANK = /\A\s*\z/
+    INDENTATION = /\A[ \t]*/
 
     def initialize(strict, indent_size)
       @strict = strict
@@ -19,6 +20,7 @@ module ToonFu
       @lines = significant(text)
       return {} if @lines.empty?
 
+      @lines.each { |line| indent(line) } if @strict
       root
     end
 
@@ -58,7 +60,6 @@ module ToonFu
 
     def object
       @lines.each_with_object({}) do |line, result|
-        indent(line)
         content = content(line)
         colon = colon_index(content)
         raise Error, "cannot decode an array yet: #{line}" if header?(content, colon)
@@ -73,9 +74,10 @@ module ToonFu
     end
 
     def indent(line)
+      raise Error, "cannot decode a line indented with a tab: #{line}" if TABS.match?(line)
+
       spaces = line[/\A */].length
-      raise Error, "cannot decode a line indented with a tab: #{line}" if @strict && TABS.match?(line)
-      raise Error, "cannot decode an indentation of #{spaces} spaces, not a multiple of #{@indent_size}: #{line}" if @strict && !(spaces % @indent_size).zero?
+      raise Error, "cannot decode an indentation of #{spaces} spaces, not a multiple of #{@indent_size}: #{line}" unless (spaces % @indent_size).zero?
     end
 
     def value(text)
@@ -87,7 +89,7 @@ module ToonFu
     end
 
     def content(line)
-      line.sub(/\A */, "")
+      line.sub(INDENTATION, "")
     end
 
     def header?(line, colon)

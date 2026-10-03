@@ -11,6 +11,13 @@ RSpec.describe "TOON spec decode fixtures" do
     expect(paths).not_to be_empty
   end
 
+  it "defers only fixtures that exist" do
+    known = paths.to_h { |path| [File.basename(path), JSON.parse(File.read(path)).fetch("tests").map { |fixture| fixture.fetch("name") }] }
+    stale = deferred.flat_map { |file, names| (names - known.fetch(file, [])).map { |name| "#{file}: #{name}" } }
+
+    expect(stale).to be_empty, "remove from decode_pending.json: #{stale.join(", ")}"
+  end
+
   paths.each do |path|
     file = File.basename(path)
     waiting = deferred.fetch(file, [])
