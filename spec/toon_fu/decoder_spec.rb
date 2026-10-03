@@ -165,8 +165,8 @@ RSpec.describe ToonFu::Decoder do
 
     context "with a quoted delimiter in a field name" do
       it "reads the field name, since quoting protects it", :aggregate_failures do
-        expect(decoder.decode(%q{t[1]{id,"a|b"}:} + "\n  1,2")).to eq({"t" => [{"id" => 1, "a|b" => 2}]})
-        expect(decoder.decode(%Q{t[1|]{id|"a,b"}:\n  1|2})).to eq({"t" => [{"id" => 1, "a,b" => 2}]})
+        expect(decoder.decode('t[1]{id,"a|b"}:' + "\n  1,2")).to eq({"t" => [{"id" => 1, "a|b" => 2}]})
+        expect(decoder.decode(%(t[1|]{id|"a,b"}:\n  1|2))).to eq({"t" => [{"id" => 1, "a,b" => 2}]})
       end
 
       it "still refuses an unquoted one" do
