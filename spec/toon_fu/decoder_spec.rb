@@ -145,10 +145,10 @@ RSpec.describe ToonFu::Decoder do
         expect { decoder.decode("\thello") }.to raise_error(ToonFu::Error, /tab/)
       end
 
-      it "takes a leading tab as indentation when not strict", :aggregate_failures do
+      it "counts a leading tab as one level when not strict", :aggregate_failures do
         lenient = described_class.new(strict: false)
-        expect(lenient.decode("\thello")).to eq("hello")
-        expect(lenient.decode("\ta: 1")).to eq({"a" => 1})
+        expect(lenient.decode("a:\n\tb: 1")).to eq({"a" => {"b" => 1}})
+        expect(lenient.decode("items[1]{id}:\n\t1")).to eq({"items" => [{"id" => 1}]})
       end
     end
 

@@ -13,6 +13,10 @@ require_relative "toon_fu/normalizer"
 require_relative "toon_fu/fields"
 require_relative "toon_fu/writer"
 require_relative "toon_fu/token"
+require_relative "toon_fu/tokens"
+require_relative "toon_fu/field_list"
+require_relative "toon_fu/header"
+require_relative "toon_fu/lines"
 require_relative "toon_fu/reader"
 require_relative "toon_fu/encodable"
 
@@ -22,7 +26,7 @@ module ToonFu
   # read; see {Encoder#encode} and {Decoder#decode}.
   class Error < StandardError; end
 
-  private_constant :FloatLiteral, :DecimalLiteral, :StringLiteral, :Normalizer, :Fields, :Writer, :Token, :Reader
+  private_constant :FloatLiteral, :DecimalLiteral, :StringLiteral, :Normalizer, :Fields, :Writer, :Token, :Tokens, :FieldList, :Header, :Line, :Lines, :Reader
 
   # Encodes a value as TOON.
   #
@@ -50,12 +54,15 @@ module ToonFu
 
   # Decodes TOON into the JSON data model.
   #
-  #   ToonFu.decode("hello")                  # => "hello"
-  #   ToonFu.decode("42")                     # => 42
-  #   ToonFu.decode("\"42\"")                 # => "42"
-  #   ToonFu.decode("")                       # => {}
-  #   ToonFu.decode("[]")                     # => []
-  #   ToonFu.decode("name: Ada\nadmin: true") # => {"name" => "Ada", "admin" => true}
+  #   ToonFu.decode("hello")                   # => "hello"
+  #   ToonFu.decode("\"42\"")                  # => "42"
+  #   ToonFu.decode("")                        # => {}
+  #   ToonFu.decode("[]")                      # => []
+  #   ToonFu.decode("name: Ada\nadmin: true")  # => {"name" => "Ada", "admin" => true}
+  #   ToonFu.decode("user:\n  id: 1")          # => {"user" => {"id" => 1}}
+  #   ToonFu.decode("tags[2]: a,b")            # => {"tags" => ["a", "b"]}
+  #   ToonFu.decode("[2]{id}:\n  1\n  2")      # => [{"id" => 1}, {"id" => 2}]
+  #   ToonFu.decode("[2:]{x}:\n  a: 1\n  b: 2") # => {"a" => {"x" => 1}, "b" => {"x" => 2}}
   #
   # @param text [String] see {Decoder#decode}
   # @param options [Hash] see {Decoder#initialize}

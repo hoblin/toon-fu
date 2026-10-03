@@ -4,11 +4,11 @@
 [![Spec drift](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml/badge.svg)](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml)
 [![Gem](https://img.shields.io/gem/v/toon-fu)](https://rubygems.org/gems/toon-fu)
 
-[TOON](https://toonformat.dev/) (Token-Oriented Object Notation) encoder for Ruby, versioned by the spec it implements: the gem's `MAJOR.MINOR` is the TOON spec version it speaks.
+[TOON](https://toonformat.dev/) (Token-Oriented Object Notation) codec for Ruby, versioned by the spec it implements: the gem's `MAJOR.MINOR` is the TOON spec version it speaks.
 
 ## What is this?
 
-TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode fixture of the spec version it implements passes.
+TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode and decode fixture of the spec version it implements passes, and everything the encoder writes reads back unchanged.
 
 ## Why?
 
@@ -111,9 +111,48 @@ For ActiveRecord models, pass `record.as_json` (or define `as_toon`).
 
 Everything else raises `ToonFu::Error` — including a `Struct` or `Data` without `as_toon`, circular references, and nesting too deep for the stack.
 
+## Reading TOON
+
+```ruby
+ToonFu.decode("users[2]{id,name}:\n  1,Ada\n  2,Bob")
+# => {"users" => [{"id" => 1, "name" => "Ada"}, {"id" => 2, "name" => "Bob"}]}
+```
+
+Decoding returns the JSON data model and nothing else: `Hash` with String keys, `Array`, `String`, `Integer`, `Float`, `true`, `false`, `nil`. Key order is the document's, except in the table forms, where it is the header's field order.
+
+```ruby
+ToonFu.decode("hello")  # => "hello"
+ToonFu.decode('"42"')   # => "42"
+ToonFu.decode("")       # => {}
+```
+
+### Options
+
+- `strict:` — `true` (default) enforces the spec's strict mode: declared lengths must match, rows must be as wide as the header, duplicate keys and malformed indentation are errors. With `false` a declared length never truncates a scope, duplicate keys resolve last-write-wins, leading spaces need not be a multiple of `indent_size`, and a tab in indentation counts as one level.
+- `indent_size:` — spaces per nesting level, default `2`.
+
+```ruby
+ToonFu.decode(text, strict: false)
+decoder = ToonFu::Decoder.new(indent_size: 4) # reuse for many documents
+decoder.decode(text)
+```
+
+### What the grammar decides, not Ruby
+
+A token is a number only when it matches the spec's own grammar, so `.5`, `1.`, `+1`, `05`, `Infinity` and `1_000` decode as strings — and a quoted token stays a string whatever it looks like. Plain digits become an exact `Integer` of any size; a fraction or an exponent goes through `Float`, carrying its 53-bit precision even when the result is integral.
+
+A token the grammar accepts but `Float` cannot hold without losing its magnitude — `1e400`, `1e-400` — raises rather than quietly becoming infinity or zero:
+
+```ruby
+ToonFu.decode("1e400")
+# ToonFu::Error: cannot decode 1e400 as a Float without losing its magnitude
+```
+
+Nesting deeper than 100 levels raises instead of exhausting the stack.
+
 ## Compared with other Ruby TOON gems
 
-The only one that passes every spec fixture: toon-fu passes all 179 encode fixtures; the table compares the 154 that use default options, which every gem can run.
+The only one that passes every spec fixture: toon-fu passes all 179 encode and all 359 decode fixtures. The table below compares encoding only — the 154 encode fixtures that use default options, which every gem can run. None of the other gems decodes, except `rbtoon`, which decodes without unescaping quoted strings and reads numbers through `to_f`/`to_i`, a wider grammar than the spec allows.
 
 | Gem | Spec fixtures passed | Speed vs toon-fu |
 |---|---:|---:|

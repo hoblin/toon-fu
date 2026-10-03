@@ -18,11 +18,11 @@ bundle exec standardrb [--fix]
 
 **Encode pipeline:** `Encoder#encode` → `Normalizer` (Ruby host types → JSON data model, `as_toon` hook, cycle and encoding checks) → per-call `Writer` (line buffer and indentation in ivars; picks the form: object, inline/list/tabular array, keyed table).
 
-**Decode pipeline:** `Decoder#decode` (UTF-8 check) → per-call `Reader` (lines in ivars; comment and blank-line pre-pass per §5.1, then root-form discovery per §5) → `Token` (one token → a value: quoted unescaping per §7.1, the §4 number grammar).
+**Decode pipeline:** `Decoder#decode` (UTF-8 check) → per-call `Reader` (recursive descent over scopes, current depth in an ivar) reading from `Lines` (the §5.1/§12 pre-pass: BOM, CR, comments, blank lines, indentation → a `Line` carrying content, depth and number). `Reader` picks the form per §5 and §9, `Header` parses a bracket segment and its `FieldList` (§6), and `Token` turns one token into a value (§7.1 unescaping, the §4 number grammar). `Tokens` holds the shared scanning: unquoted positions, delimiter splitting, U+0020 trimming.
 
 **Helpers:** `Fields` (tabular column classification, §9.3), `StringLiteral` (quoting/escaping per delimiter, §7), `FloatLiteral` / `DecimalLiteral` (canonical numbers, §2).
 
-**Spec:** `spec/toon-spec` is the `toon-format/spec` submodule pinned to its release tag. `spec/conformance/encode_spec.rb` runs every encode fixture keyed on file and index, and `decode_spec.rb` does the same for the decode fixtures.
+**Spec:** `spec/toon-spec` is the `toon-format/spec` submodule pinned to its release tag. `spec/conformance/encode_spec.rb` and `decode_spec.rb` run every fixture of their direction keyed on file and index; `round_trip_spec.rb` encodes each encode fixture and decodes the result back, which no single-direction fixture can check.
 
 ## Rules
 

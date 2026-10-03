@@ -31,14 +31,21 @@ module ToonFu
     # +Integer+ of any size; a fraction or an exponent goes through +Float+
     # and carries its 53-bit precision, even when the result is integral.
     #
+    # Key order is the document's, except in the tabular and keyed tabular
+    # forms, where it is the header's field order at every level. Nesting
+    # deeper than 100 levels raises rather than exhausting the stack.
+    #
     # @param text [String] UTF-8, or an encoding that transcodes to it
     # @return [Hash, Array, String, Integer, Float, true, false, nil]
     # @raise [Error] for text that is not a String or not valid UTF-8; for a
     #   number outside the Float range; for an invalid escape, an
     #   unterminated quoted string, or content after a closing quote; for a
-    #   key without a colon; for content after a completed root form; and,
-    #   when strict, for duplicate keys and indentation that is not a
-    #   multiple of indent_size
+    #   key without a colon; for a bare token line inside a scope; for
+    #   content after a completed root form; for nesting beyond the depth
+    #   limit; and, when strict, for a declared length or row width that
+    #   does not match, a malformed header, a duplicate key, a blank line
+    #   inside a header's scope, and indentation that is not a multiple of
+    #   indent_size
     def decode(text)
       Reader.new(@strict, @indent_size).read(utf8(text))
     end

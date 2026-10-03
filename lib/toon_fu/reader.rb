@@ -2,117 +2,291 @@
 
 module ToonFu
   class Reader
-    BOM = "\u{feff}"
-    COMMENT = /\A *#/
-    BRACKETS = /\[(?:0|[1-9][0-9]*):?[\t|]?\](?:\{.*\})?:/
-    HEADER = /\A(?:"(?:[^"\\]|\\.)*"|[^\s\[]+)?#{BRACKETS}/
-    ROOT_HEADER = /\A#{BRACKETS}/
-    TABS = /\A\t+/
-    BLANK = /\A\s*\z/
-    INDENTATION = /\A[ \t]*/
-    PLAIN = /[^":]+/
-    QUOTED = /"(?:[^"\\]|\\.)*"/
+    MAX_DEPTH = 100
 
     def initialize(strict, indent_size)
       @strict = strict
       @indent_size = indent_size
+      @depth = 0
     end
 
     def read(text)
-      @lines = significant(text)
+      @lines = Lines.new(text, @strict, @indent_size)
       return {} if @lines.empty?
 
-      @lines.each { |line| indent(line) } if @strict
       root
     end
 
     private
 
-    def significant(text)
-      text = text.delete_prefix(BOM)
-      text.split("\n", -1).map { |line| line.delete_suffix("\r") }
-        .reject { |line| COMMENT.match?(line) }
-        .map { |line| line.sub(/ +\z/, "") }
-        .reject { |line| BLANK.match?(line) }
-    end
-
     def root
-      first = content(@lines.first)
-      return header_root(first) if ROOT_HEADER.match?(first)
-      return trailing(1) { [] } if first == "[]"
-      return Token.decode(first) if @lines.one? && colon_index(first).nil?
+      line = @lines.peek
+      return empty_array_root if line.content == "[]"
 
-      object
+      header = usable(Header.parse(line.content), line)
+      return keyless_root(header) if header && header.key.nil?
+      return scalar_root(line) if @lines.one? && Tokens.colon_index(line.content).nil?
+
+      object(0)
     end
 
-    def header_root(header)
-      scope = 1 + @lines.drop(1).take_while { |line| depth(line).positive? }.length
-      trailing(scope) { raise Error, "cannot decode a root array yet: #{header}" }
+    def keyless_root(header)
+      @lines.next
+      value = header.fields? ? table(header, 1) : array(header, 1)
+      trailing
+      value
     end
 
-    def trailing(consumed)
-      raise Error, "cannot decode content after the root form: #{@lines[consumed]}" if @lines.length > consumed
+    def empty_array_root
+      @lines.next
+      trailing
+      []
+    end
+
+    def scalar_root(line)
+      @lines.next
+      Token.decode(Tokens.trim(line.content))
+    end
+
+    def trailing
+      return if @lines.empty?
+
+      raise Error, "cannot decode content after the root form: #{@lines.peek.text}"
+    end
+
+    def object(depth)
+      result = {}
+      while (line = @lines.peek) && line.depth >= depth
+        if line.depth > depth
+          orphan(line)
+          next
+        end
+
+        @lines.next
+        key, value = field(line, depth)
+        store(result, key, value, line)
+      end
+      result
+    end
+
+    def orphan(line)
+      raise Error, "cannot decode a line that belongs to no scope on line #{line.number}: #{line.text}" if @strict
+
+      @lines.next
+    end
+
+    def store(result, key, value, line)
+      raise Error, "cannot decode a duplicate key on line #{line.number}: #{key.inspect}" if @strict && result.key?(key)
+
+      result[key] = value
+    end
+
+    def field(line, depth)
+      header = usable(Header.parse(line.content), line)
+      return [Tokens.key(header.key), header_value(header, depth)] if header&.key
+      raise Error, "cannot decode a keyless array header in object field position on line #{line.number}: #{line.text}" if header
+
+      colon = Tokens.colon_index(line.content)
+      raise Error, "cannot decode a line without a colon after its key on line #{line.number}: #{line.text}" if colon.nil?
+
+      key = Tokens.key(line.content[0...colon])
+      [key, field_value(Tokens.trim(line.content[(colon + 1)..]), depth)]
+    end
+
+    def field_value(text, depth)
+      return [] if text == "[]"
+      return nested(depth) if text.empty?
+
+      Token.decode(text)
+    end
+
+    def nested(depth)
+      line = @lines.peek
+      return {} if line.nil? || line.depth <= depth
+
+      guard(line)
+      descend { object(depth + 1) }
+    end
+
+    def header_value(header, depth)
+      return table(header, depth + 1) if header.fields?
+      return [] if header.length.zero? && !items?(depth + 1)
+
+      array(header, depth + 1)
+    end
+
+    def items?(depth)
+      line = @lines.peek
+      !line.nil? && line.depth == depth
+    end
+
+    def array(header, depth)
+      return inline(header) unless header.inline.empty?
+
+      descend { list(header, depth) }
+    end
+
+    def inline(header)
+      cells = Tokens.split(header.inline, header.delimiter).map { |cell| Token.decode(Tokens.trim(cell)) }
+      count(cells.length, header, "value")
+      cells
+    end
+
+    def list(header, depth)
+      items = []
+      while (line = @lines.peek) && line.depth == depth && line.item?
+        span(line) unless items.empty?
+        @lines.next
+        items << item(line, depth)
+      end
+      scalar_line(@lines.peek, depth)
+      count(items.length, header, "item")
+      items
+    end
+
+    # A scalar line is valid only as a root primitive; inside a scope it is a
+    # structural error in strict and non-strict mode alike (§5.2, §14.2).
+    def scalar_line(line, depth)
+      return if line.nil? || line.depth != depth || Tokens.colon_index(line.content)
+      return if Header.parse(line.content)
+
+      raise Error, "cannot decode a bare token line inside a scope on line #{line.number}: #{line.text}"
+    end
+
+    def item(line, depth)
+      rest = line.item_content
+      return {} if rest.empty?
+      return [] if rest == "[]"
+
+      header = usable(Header.parse(rest), line)
+      return item_header(header, line, depth) if header
+      return item_object(rest, depth) if Tokens.colon_index(rest)
+
+      Token.decode(Tokens.trim(rest))
+    end
+
+    def item_header(header, line, depth)
+      return item_object(line.item_content, depth) if header.key
+      raise Error, "cannot decode a keyless fields-bearing header as a list item on line #{line.number}: #{line.text}" if header.fields?
+
+      array(header, depth + 1)
+    end
+
+    def item_object(rest, depth)
+      synthetic = Line.new(rest, depth + 1, @lines.number)
+      key, value = descend { field(synthetic, depth + 1) }
+      result = {}
+      store(result, key, value, synthetic)
+      following = @lines.peek
+      span(following) if following && following.depth == depth + 1
+      descend { object(depth + 1) }.each { |name, later| store(result, name, later, synthetic) }
+      result
+    end
+
+    def table(header, depth)
+      raise Error, "cannot decode a fields-bearing header carrying inline content: #{header.inline}" unless Tokens.trim(header.inline).empty?
+      raise Error, "cannot decode a field name repeated in one field list: #{header.duplicate.inspect}" if @strict && header.duplicate
+
+      header.keyed? ? entries(header, depth) : rows(header, depth)
+    end
+
+    def rows(header, depth)
+      collected = descend do
+        gather(depth) { |line| row(header, line) }
+      end
+      count(collected.length, header, "row")
+      collected
+    end
+
+    def entries(header, depth)
+      result = {}
+      collected = descend do
+        gather(depth) do |line|
+          colon = Tokens.colon_index(line.content)
+          if colon.nil?
+            raise Error, "cannot decode an entry row without a colon on line #{line.number}: #{line.text}" if @strict
+
+            next nil
+          end
+          [Tokens.key(line.content[0...colon]), row(header, line, line.content[(colon + 1)..])]
+        end
+      end
+      collected.compact!
+      count(collected.length, header, "entry row")
+      collected.each { |key, value| store(result, key, value, @lines.last) }
+      result
+    end
+
+    def gather(depth)
+      collected = []
+      while (line = @lines.peek) && line.depth == depth
+        span(line) unless collected.empty?
+        @lines.next
+        collected << yield(line)
+      end
+      collected
+    end
+
+    def span(line)
+      return unless @strict && line.after_blank
+
+      raise Error, "cannot decode a blank line inside a header span, before line #{line.number}: #{line.text}"
+    end
+
+    def row(header, line, text = line.content)
+      cells = Tokens.split(text, header.delimiter)
+      cells = [] if cells.length == 1 && Tokens.trim(cells.first).empty?
+      width(cells.length, header, line)
+      shape(header.fields, cells.each)
+    end
+
+    def shape(fields, cells)
+      fields.each_with_object({}) do |(name, nested), result|
+        if nested
+          result[name] = shape(nested, cells)
+        else
+          cell = begin
+            cells.next
+          rescue StopIteration
+            next
+          end
+          result[name] = Token.decode(Tokens.trim(cell))
+        end
+      end
+    end
+
+    def count(actual, header, noun)
+      return unless @strict && actual != header.length
+
+      raise Error, "cannot decode #{actual} #{noun}#{"s" unless actual == 1} where the header declares #{header.length}"
+    end
+
+    def width(actual, header, line)
+      return unless @strict && actual != header.leaves.length
+
+      raise Error, "cannot decode #{actual} cells on line #{line.number} where the header declares #{header.leaves.length} fields"
+    end
+
+    def usable(header, line)
+      return header unless header&.malformed?
+      raise Error, "cannot decode a malformed array header on line #{line.number}: #{line.text}" if @strict
+
+      nil
+    end
+
+    def guard(line)
+      return unless @strict && line.depth > @depth + 1
+
+      raise Error, "cannot decode a depth jump on line #{line.number}: #{line.text}"
+    end
+
+    def descend
+      @depth += 1
+      raise Error, "cannot decode nesting deeper than #{MAX_DEPTH} levels" if @depth > MAX_DEPTH
 
       yield
-    end
-
-    def depth(line)
-      line[/\A */].length / @indent_size
-    end
-
-    def object
-      @lines.each_with_object({}) do |line, result|
-        content = content(line)
-        colon = colon_index(content)
-        raise Error, "cannot decode an array yet: #{line}" if header?(content, colon)
-        raise Error, "cannot decode nesting yet: #{line}" if depth(line).positive?
-        raise Error, "cannot decode a line that is not a key-value pair: #{line}" if colon.nil?
-
-        key = Token.key(trim(content[0...colon]))
-        raise Error, "cannot decode a duplicate key: #{key.inspect}" if @strict && result.key?(key)
-
-        result[key] = value(trim(content[(colon + 1)..]))
-      end
-    end
-
-    def indent(line)
-      raise Error, "cannot decode a line indented with a tab: #{line}" if TABS.match?(line)
-
-      spaces = line[/\A */].length
-      raise Error, "cannot decode an indentation of #{spaces} spaces, not a multiple of #{@indent_size}: #{line}" unless (spaces % @indent_size).zero?
-    end
-
-    def value(text)
-      case text
-      when "[]" then []
-      when "" then {}
-      else Token.decode(text)
-      end
-    end
-
-    def content(line)
-      line.sub(INDENTATION, "")
-    end
-
-    def header?(line, colon)
-      HEADER.match?(line) && (colon.nil? || line.index("[") < colon)
-    end
-
-    def trim(text)
-      text = text.dup
-      nil while text.delete_prefix!(" ")
-      nil while text.delete_suffix!(" ")
-      text
-    end
-
-    def colon_index(line)
-      scanner = StringScanner.new(line)
-      until scanner.eos?
-        next if scanner.skip(PLAIN)
-        return scanner.charpos if scanner.peek(1) == ":"
-        return nil unless scanner.skip(QUOTED)
-      end
-      nil
+    ensure
+      @depth -= 1
     end
   end
 end
