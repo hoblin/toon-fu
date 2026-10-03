@@ -4,11 +4,11 @@
 [![Spec drift](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml/badge.svg)](https://github.com/hoblin/toon-fu/actions/workflows/spec-drift.yml)
 [![Gem](https://img.shields.io/gem/v/toon-fu)](https://rubygems.org/gems/toon-fu)
 
-[TOON](https://toonformat.dev/) (Token-Oriented Object Notation) encoder for Ruby, versioned by the spec it implements: the gem's `MAJOR.MINOR` is the TOON spec version it speaks.
+[TOON](https://toonformat.dev/) (Token-Oriented Object Notation) codec for Ruby, versioned by the spec it implements: the gem's `MAJOR.MINOR` is the TOON spec version it speaks.
 
 ## What is this?
 
-TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode fixture of the spec version it implements passes.
+TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode and decode fixture of the spec version it implements passes.
 
 ## Why?
 
@@ -111,9 +111,45 @@ For ActiveRecord models, pass `record.as_json` (or define `as_toon`).
 
 Everything else raises `ToonFu::Error` — including a `Struct` or `Data` without `as_toon`, circular references, and nesting too deep for the stack.
 
+## Reading TOON
+
+```ruby
+ToonFu.decode("users[2]{id,name}:\n  1,Ada\n  2,Bob")
+# => {"users" => [{"id" => 1, "name" => "Ada"}, {"id" => 2, "name" => "Bob"}]}
+```
+
+You get back plain Ruby: `Hash` with String keys, `Array`, `String`, `Integer`, `Float`, `true`, `false`, `nil`.
+
+Quoting decides the type, and an unquoted token is a number only if the spec says it is one:
+
+```ruby
+ToonFu.decode("a: 42")      # => {"a" => 42}
+ToonFu.decode('a: "42"')    # => {"a" => "42"}
+ToonFu.decode("a: 05")      # => {"a" => "05"}
+ToonFu.decode("a: +1")      # => {"a" => "+1"}
+```
+
+Malformed input raises `ToonFu::Error`:
+
+```ruby
+ToonFu.decode("tags[3]: a,b")
+# ToonFu::Error: cannot decode 2 values where the header declares 3
+```
+
+### Options
+
+- `strict:` — `true` (default) checks what the spec requires: declared lengths, row widths, duplicate keys, indentation. Pass `false` to read a document that bends those rules — a declared length is ignored, a duplicate key takes its last value.
+- `indent_size:` — spaces per nesting level, default `2`.
+
+```ruby
+ToonFu.decode(text, strict: false)
+decoder = ToonFu::Decoder.new(indent_size: 4) # reuse for many documents
+decoder.decode(text)
+```
+
 ## Compared with other Ruby TOON gems
 
-The only one that passes every spec fixture: toon-fu passes all 179 encode fixtures; the table compares the 154 that use default options, which every gem can run.
+The only one that passes every spec fixture: toon-fu passes all 179 encode and all 359 decode fixtures. The table compares encoding — the 154 encode fixtures that use default options, which every gem can run; none of the others reads TOON back.
 
 | Gem | Spec fixtures passed | Speed vs toon-fu |
 |---|---:|---:|

@@ -14,22 +14,25 @@ bundle exec standardrb [--fix]
 
 ## Architecture
 
-**Public API:** `ToonFu.encode(value, **options)` and `ToonFu::Encoder` (`lib/toon_fu/encoder.rb`, options `delimiter:`, `indent_size:`); `ToonFu::Encodable` adds `#to_toon` to core classes (`lib/toon_fu/encodable.rb`); `ToonFu::Error`. Everything else is a `private_constant`.
+**Public API:** `ToonFu.encode(value, **options)` and `ToonFu::Encoder` (`lib/toon_fu/encoder.rb`, options `delimiter:`, `indent_size:`); `ToonFu.decode(text, **options)` and `ToonFu::Decoder` (`lib/toon_fu/decoder.rb`, options `strict:`, `indent_size:`); `ToonFu::Encodable` adds `#to_toon` to core classes (`lib/toon_fu/encodable.rb`); `ToonFu::Error`. Everything else is a `private_constant`.
 
-**Pipeline:** `Encoder#encode` → `Normalizer` (Ruby host types → JSON data model, `as_toon` hook, cycle and encoding checks) → per-call `Writer` (line buffer and indentation in ivars; picks the form: object, inline/list/tabular array, keyed table).
+**Encode pipeline:** `Encoder#encode` → `Normalizer` (Ruby host types → JSON data model, `as_toon` hook, cycle and encoding checks) → per-call `Writer` (line buffer and indentation in ivars; picks the form: object, inline/list/tabular array, keyed table).
+
+**Decode pipeline:** `Decoder#decode` (UTF-8 check) → per-call `Reader` (recursive descent over scopes, current depth in an ivar) reading from `Lines` (the §5.1/§12 pre-pass: BOM, CR, comments, blank lines, indentation → a `Line` carrying content, depth and number). `Reader` picks the form per §5 and §9, `Header` parses a bracket segment and its `FieldList` (§6), and `Token` turns one token into a value (§7.1 unescaping, the §4 number grammar). `Tokens` holds the shared scanning: unquoted positions, delimiter splitting, U+0020 trimming.
 
 **Helpers:** `Fields` (tabular column classification, §9.3), `StringLiteral` (quoting/escaping per delimiter, §7), `FloatLiteral` / `DecimalLiteral` (canonical numbers, §2).
 
-**Spec:** `spec/toon-spec` is the `toon-format/spec` submodule pinned to its release tag. `spec/conformance/encode_spec.rb` runs every encode fixture keyed on file and index.
+**Spec:** `spec/toon-spec` is the `toon-format/spec` submodule pinned to its release tag. `spec/conformance/encode_spec.rb` and `decode_spec.rb` run every fixture of their direction keyed on file and index.
 
 ## Rules
 
-- The spec decides. For any unfamiliar input the first question is what `spec/toon-spec/SPEC.md` says; if the spec models it, encode it, otherwise raise `ToonFu::Error`. Every conversion is one the spec or the documented list defines, and behaviour depends on the gem alone. Accepted types are listed on `Encoder#encode` and in the README.
+- The spec decides. For any unfamiliar input the first question is what `spec/toon-spec/SPEC.md` says; if the spec models it, encode or decode it, otherwise raise `ToonFu::Error`. Every conversion is one the spec or the documented list defines, and behaviour depends on the gem alone. Accepted types are listed on `Encoder#encode` and in the README.
+- Decoding never hands a decision the spec defines to a host parser with a wider grammar (§4): the number grammar is ours, and `Float()`/`Integer()` see only a token already matched against it.
 - The fixtures are the primary tests. Unit specs cover what JSON fixtures cannot express (host types, options validation, Ruby-level errors) and the gem's own behaviour — Ruby and other libraries test themselves.
 - Ruby-shaped OOP: state lives in objects' ivars. Split a form into its own class when complexity grows.
 - Prefer Ruby built-ins; take a technique from the inspiration gems (Psych, CSV, json) when it measurably beats the built-in, and copy structure only when it is Ruby-shaped — older gems mirror their C code.
 - Keep the public API minimal, with the spec's option names in snake_case: the version number belongs to the spec, so our own API stays stable.
-- Runtime dependencies: Ruby's standard library only. `date` is required; `BigDecimal` is accepted when the caller has loaded it.
+- Runtime dependencies: Ruby's standard library only. `date` and `strscan` are required, both default gems; `BigDecimal` is accepted when the caller has loaded it.
 - Public gem: YARD on every public interface.
 
 ## Versioning & Releases
