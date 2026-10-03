@@ -49,6 +49,16 @@ RSpec.describe ToonFu::Decoder do
       end
     end
 
+    context "with a key carrying no value" do
+      it "reads a bare key as an empty object, not an empty string" do
+        expect(decoder.decode("matches:")).to eq({"matches" => {}})
+      end
+
+      it "reads an explicit empty array" do
+        expect(decoder.decode("matches: []")).to eq({"matches" => []})
+      end
+    end
+
     context "with a value that is not a String" do
       it "refuses it" do
         expect { decoder.decode(42) }.to raise_error(ToonFu::Error, /String/)

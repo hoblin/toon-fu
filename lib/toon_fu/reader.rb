@@ -77,7 +77,15 @@ module ToonFu
 
     def pair(line)
       key, value = split_key(line.strip)
-      [Token.decode(key), (value == "[]") ? [] : Token.decode(value)]
+      [Token.decode(key), value(value)]
+    end
+
+    def value(text)
+      case text
+      when "[]" then []
+      when "" then {}
+      else Token.decode(text)
+      end
     end
 
     def split_key(line)
