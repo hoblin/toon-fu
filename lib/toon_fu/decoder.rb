@@ -36,10 +36,9 @@ module ToonFu
     # @raise [Error] for text that is not a String or not valid UTF-8; for a
     #   number outside the Float range; for an invalid escape, an
     #   unterminated quoted string, or content after a closing quote; for a
-    #   key without a colon; for content after a completed root form; when
-    #   strict, for duplicate keys and indentation that is not a multiple of
-    #   indent_size; and, until their slice lands, for nested objects,
-    #   arrays and the table forms
+    #   key without a colon; for content after a completed root form; and,
+    #   when strict, for duplicate keys and indentation that is not a
+    #   multiple of indent_size
     def decode(text)
       Reader.new(@strict, @indent_size).read(utf8(text))
     end

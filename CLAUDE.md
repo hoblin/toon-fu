@@ -18,15 +18,16 @@ bundle exec standardrb [--fix]
 
 **Encode pipeline:** `Encoder#encode` → `Normalizer` (Ruby host types → JSON data model, `as_toon` hook, cycle and encoding checks) → per-call `Writer` (line buffer and indentation in ivars; picks the form: object, inline/list/tabular array, keyed table).
 
-**Decode pipeline:** `Decoder#decode` (UTF-8 check) → per-call `Reader` (lines in ivars; comment and blank-line pre-pass per §5.1, then root-form discovery per §5) → `Token` (one token → a value: quoted unescaping per §7.1, the §4 number grammar). Arriving by slice under #11; nested objects, arrays and the table forms still raise.
+**Decode pipeline:** `Decoder#decode` (UTF-8 check) → per-call `Reader` (lines in ivars; comment and blank-line pre-pass per §5.1, then root-form discovery per §5) → `Token` (one token → a value: quoted unescaping per §7.1, the §4 number grammar).
 
 **Helpers:** `Fields` (tabular column classification, §9.3), `StringLiteral` (quoting/escaping per delimiter, §7), `FloatLiteral` / `DecimalLiteral` (canonical numbers, §2).
 
-**Spec:** `spec/toon-spec` is the `toon-format/spec` submodule pinned to its release tag. `spec/conformance/encode_spec.rb` runs every encode fixture keyed on file and index; `decode_spec.rb` runs all 359 decode fixtures, with the forms a later slice reads listed by name in `decode_pending.json` and marked `pending`, so a case that starts passing fails the suite until its entry goes.
+**Spec:** `spec/toon-spec` is the `toon-format/spec` submodule pinned to its release tag. `spec/conformance/encode_spec.rb` runs every encode fixture keyed on file and index, and `decode_spec.rb` does the same for the decode fixtures.
 
 ## Rules
 
-- The spec decides. For any unfamiliar input the first question is what `spec/toon-spec/SPEC.md` says; if the spec models it, encode or decode it, otherwise raise `ToonFu::Error`. Every conversion is one the spec or the documented list defines, and behaviour depends on the gem alone. Accepted types are listed on `Encoder#encode` and in the README; decoding never delegates a decision the spec defines to a host parser with a wider grammar (§4), and its numeric out-of-range policy is documented on `Decoder#decode`.
+- The spec decides. For any unfamiliar input the first question is what `spec/toon-spec/SPEC.md` says; if the spec models it, encode or decode it, otherwise raise `ToonFu::Error`. Every conversion is one the spec or the documented list defines, and behaviour depends on the gem alone. Accepted types are listed on `Encoder#encode` and in the README.
+- Decoding never hands a decision the spec defines to a host parser with a wider grammar (§4): the number grammar is ours, and `Float()`/`Integer()` see only a token already matched against it.
 - The fixtures are the primary tests. Unit specs cover what JSON fixtures cannot express (host types, options validation, Ruby-level errors) and the gem's own behaviour — Ruby and other libraries test themselves.
 - Ruby-shaped OOP: state lives in objects' ivars. Split a form into its own class when complexity grows.
 - Prefer Ruby built-ins; take a technique from the inspiration gems (Psych, CSV, json) when it measurably beats the built-in, and copy structure only when it is Ruby-shaped — older gems mirror their C code.
