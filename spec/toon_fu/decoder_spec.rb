@@ -131,8 +131,9 @@ RSpec.describe ToonFu::Decoder do
     end
 
     context "with indentation" do
-      it "refuses a tab when strict" do
+      it "refuses a tab anywhere in the indentation when strict", :aggregate_failures do
         expect { decoder.decode("a: 1\n\tb: 2") }.to raise_error(ToonFu::Error, /tab/)
+        expect { decoder.decode("a:\n  \tb: 1") }.to raise_error(ToonFu::Error, /tab/)
       end
 
       it "refuses leading spaces that are not a multiple of indent_size when strict" do
@@ -159,6 +160,17 @@ RSpec.describe ToonFu::Decoder do
 
       it "keeps a row whose delimiter precedes its colon" do
         expect(decoder.decode("a[1]{x,y}:\n  1,b: 2")).to eq({"a" => [{"x" => 1, "y" => "b: 2"}]})
+      end
+    end
+
+    context "with a quoted delimiter in a field name" do
+      it "reads the field name, since quoting protects it", :aggregate_failures do
+        expect(decoder.decode(%q{t[1]{id,"a|b"}:} + "\n  1,2")).to eq({"t" => [{"id" => 1, "a|b" => 2}]})
+        expect(decoder.decode(%Q{t[1|]{id|"a,b"}:\n  1|2})).to eq({"t" => [{"id" => 1, "a,b" => 2}]})
+      end
+
+      it "still refuses an unquoted one" do
+        expect { decoder.decode("t[1|]{a,b}:\n  1|2") }.to raise_error(ToonFu::Error, /malformed/)
       end
     end
 
