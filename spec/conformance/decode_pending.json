@@ -149,8 +149,6 @@
     "skips an entry-depth line without a colon in non-strict mode"
   ],
   "objects.json": [
-    "parses empty nested object header",
-    "bare key: with no children decodes as empty object, not array",
     "parses deeply nested objects with indentation",
     "applies LWW for nested duplicate sibling keys in non-strict mode",
     "applies LWW for duplicate keys within a list-item object in non-strict mode",

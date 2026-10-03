@@ -49,6 +49,39 @@ RSpec.describe ToonFu::Decoder do
       end
     end
 
+    context "with keys that look like other types" do
+      it "keeps every key a String", :aggregate_failures do
+        %w[true false null 42 1.5 -0 1e3].each do |key|
+          expect(decoder.decode("#{key}: 1").keys).to eq([key])
+        end
+      end
+
+      it "unescapes a quoted key" do
+        expect(decoder.decode('"a:b": 1')).to eq({"a:b" => 1})
+      end
+    end
+
+    context "with whitespace around a token" do
+      it "trims spaces only, keeping other whitespace in the token", :aggregate_failures do
+        expect(decoder.decode("a:  spaced  ")).to eq({"a" => "spaced"})
+        expect(decoder.decode("a: \tx")).to eq({"a" => "\tx"})
+        expect(decoder.decode("a: 1\t")).to eq({"a" => "1\t"})
+        expect(decoder.decode("a\t: b")).to eq({"a\t" => "b"})
+      end
+
+      it "treats a line of any whitespace as blank", :aggregate_failures do
+        ["   ", "\t", "\v"].each do |blank|
+          expect(decoder.decode("a: 1\n#{blank}\nb: 2")).to eq({"a" => 1, "b" => 2})
+        end
+      end
+    end
+
+    context "with a colon before the first bracket" do
+      it "reads the line as a key-value pair, not a header" do
+        expect(decoder.decode("a:b[2]: x")).to eq({"a" => "b[2]: x"})
+      end
+    end
+
     context "with a key carrying no value" do
       it "reads a bare key as an empty object, not an empty string" do
         expect(decoder.decode("matches:")).to eq({"matches" => {}})

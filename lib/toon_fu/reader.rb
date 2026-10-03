@@ -8,6 +8,7 @@ module ToonFu
     HEADER = /\A(?:"(?:[^"\\]|\\.)*"|[^\s\[]+)?#{BRACKETS}/
     ROOT_HEADER = /\A#{BRACKETS}/
     TABS = /\A\t+/
+    BLANK = /\A\s*\z/
 
     def initialize(strict, indent_size)
       @strict = strict
@@ -28,14 +29,14 @@ module ToonFu
       text.split("\n", -1).map { |line| line.delete_suffix("\r") }
         .reject { |line| COMMENT.match?(line) }
         .map { |line| line.sub(/ +\z/, "") }
-        .reject(&:empty?)
+        .reject { |line| BLANK.match?(line) }
     end
 
     def root
       first = @lines.first
       return header_root(first) if ROOT_HEADER.match?(first)
       return trailing(1) { [] } if first == "[]"
-      return Token.decode(first) if @lines.one? && !key_value?(first)
+      return Token.decode(first) if @lines.one? && colon_index(content(first)).nil?
 
       object
     end
@@ -58,14 +59,16 @@ module ToonFu
     def object
       @lines.each_with_object({}) do |line, result|
         indent(line)
-        raise Error, "cannot decode an array yet: #{line}" if HEADER.match?(line.strip)
+        content = content(line)
+        colon = colon_index(content)
+        raise Error, "cannot decode an array yet: #{line}" if header?(content, colon)
         raise Error, "cannot decode nesting yet: #{line}" if depth(line).positive?
-        raise Error, "cannot decode a line that is not a key-value pair: #{line}" unless key_value?(line)
+        raise Error, "cannot decode a line that is not a key-value pair: #{line}" if colon.nil?
 
-        key, value = pair(line)
+        key = Token.key(trim(content[0...colon]))
         raise Error, "cannot decode a duplicate key: #{key.inspect}" if @strict && result.key?(key)
 
-        result[key] = value
+        result[key] = value(trim(content[(colon + 1)..]))
       end
     end
 
@@ -73,11 +76,6 @@ module ToonFu
       spaces = line[/\A */].length
       raise Error, "cannot decode a line indented with a tab: #{line}" if @strict && TABS.match?(line)
       raise Error, "cannot decode an indentation of #{spaces} spaces, not a multiple of #{@indent_size}: #{line}" if @strict && !(spaces % @indent_size).zero?
-    end
-
-    def pair(line)
-      key, value = split_key(line.strip)
-      [Token.decode(key), value(value)]
     end
 
     def value(text)
@@ -88,15 +86,16 @@ module ToonFu
       end
     end
 
-    def split_key(line)
-      colon = colon_index(line)
-      raise Error, "cannot decode a line without a colon after its key: #{line}" if colon.nil?
-
-      [line[0...colon].strip, line[(colon + 1)..].strip]
+    def content(line)
+      line.sub(/\A */, "")
     end
 
-    def key_value?(line)
-      !colon_index(line.strip).nil?
+    def header?(line, colon)
+      HEADER.match?(line) && (colon.nil? || line.index("[") < colon)
+    end
+
+    def trim(text)
+      text.sub(/\A */, "").sub(/ +\z/, "")
     end
 
     def colon_index(line)

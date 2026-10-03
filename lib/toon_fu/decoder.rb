@@ -4,8 +4,9 @@ module ToonFu
   # Decodes TOON with one set of options, for callers that decode many.
   class Decoder
     # @param strict [Boolean] whether to enforce the spec's strict-mode
-    #   checks; with +false+ duplicate keys resolve last-write-wins and
-    #   indentation is lenient
+    #   checks; with +false+ duplicate keys resolve last-write-wins, leading
+    #   spaces that are not a multiple of indent_size are accepted, and a
+    #   tab in indentation is accepted and counts towards no depth
     # @param indent_size [Integer] spaces per nesting level
     # @raise [ArgumentError] when strict is not a boolean or indent_size is
     #   not a positive Integer
@@ -26,15 +27,19 @@ module ToonFu
     #
     # Out-of-range numbers: a token the grammar accepts but +Float+ cannot
     # hold without losing its magnitude, such as +1e400+ or +1e-400+, raises
-    # rather than becoming infinity or zero. Integers are exact at any size.
+    # rather than becoming infinity or zero. Plain digits become an exact
+    # +Integer+ of any size; a fraction or an exponent goes through +Float+
+    # and carries its 53-bit precision, even when the result is integral.
     #
     # @param text [String] UTF-8, or an encoding that transcodes to it
     # @return [Hash, Array, String, Integer, Float, true, false, nil]
     # @raise [Error] for text that is not a String or not valid UTF-8; for a
     #   number outside the Float range; for an invalid escape, an
     #   unterminated quoted string, or content after a closing quote; for a
-    #   key without a colon; and, when strict, for duplicate keys and
-    #   indentation that is not a multiple of indent_size
+    #   key without a colon; for content after a completed root form; when
+    #   strict, for duplicate keys and indentation that is not a multiple of
+    #   indent_size; and, until their slice lands, for nested objects,
+    #   arrays and the table forms
     def decode(text)
       Reader.new(@strict, @indent_size).read(utf8(text))
     end

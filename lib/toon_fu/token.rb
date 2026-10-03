@@ -7,6 +7,11 @@ module ToonFu
     ESCAPE = /\\(?:(["\\nrt])|u([0-9a-fA-F]{4})|(.|\z))/m
     UNESCAPES = {'"' => '"', "\\" => "\\", "n" => "\n", "r" => "\r", "t" => "\t"}.freeze
     SURROGATES = (0xd800..0xdfff)
+    EXACT_INTEGERS = 2**Float::MANT_DIG
+
+    def self.key(text)
+      text.start_with?('"') ? quoted(text) : text
+    end
 
     def self.decode(text)
       return quoted(text) if text.start_with?('"')
@@ -66,7 +71,7 @@ module ToonFu
     end
 
     def self.integral?(float)
-      float == float.truncate && float.abs < FloatLiteral::DECIMAL_RANGE.end
+      float == float.truncate && float.abs <= EXACT_INTEGERS
     end
 
     def self.nonzero?(text)
