@@ -4,8 +4,8 @@ module ToonFu
   # Decodes TOON with one set of options, for callers that decode many.
   class Decoder
     # @param strict [Boolean] whether to enforce the spec's strict-mode
-    #   checks; with +false+ a declared length never truncates a scope,
-    #   duplicate keys resolve last-write-wins, and indentation is lenient
+    #   checks; with +false+ duplicate keys resolve last-write-wins and
+    #   indentation is lenient
     # @param indent_size [Integer] spaces per nesting level
     # @raise [ArgumentError] when strict is not a boolean or indent_size is
     #   not a positive Integer
@@ -37,8 +37,6 @@ module ToonFu
     #   indentation that is not a multiple of indent_size
     def decode(text)
       Reader.new(@strict, @indent_size).read(utf8(text))
-    rescue SystemStackError
-      raise Error, "cannot decode nesting too deep"
     end
 
     private
