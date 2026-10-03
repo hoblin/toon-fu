@@ -8,7 +8,7 @@
 
 ## What is this?
 
-TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode and decode fixture of the spec version it implements passes, and everything the encoder writes reads back unchanged.
+TOON is a compact, readable encoding of the JSON data model for LLM prompts: indentation instead of braces, quotes only where needed, and tables for arrays of uniform objects. toon-fu is written from the [specification](https://github.com/toon-format/spec) and runs the spec's reference fixtures as its conformance suite — every encode and decode fixture of the spec version it implements passes.
 
 ## Why?
 

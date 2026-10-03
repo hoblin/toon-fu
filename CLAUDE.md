@@ -22,7 +22,7 @@ bundle exec standardrb [--fix]
 
 **Helpers:** `Fields` (tabular column classification, §9.3), `StringLiteral` (quoting/escaping per delimiter, §7), `FloatLiteral` / `DecimalLiteral` (canonical numbers, §2).
 
-**Spec:** `spec/toon-spec` is the `toon-format/spec` submodule pinned to its release tag. `spec/conformance/encode_spec.rb` and `decode_spec.rb` run every fixture of their direction keyed on file and index; `round_trip_spec.rb` encodes each encode fixture and decodes the result back, which no single-direction fixture can check.
+**Spec:** `spec/toon-spec` is the `toon-format/spec` submodule pinned to its release tag. `spec/conformance/encode_spec.rb` and `decode_spec.rb` run every fixture of their direction keyed on file and index.
 
 ## Rules
 
