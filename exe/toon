@@ -8,6 +8,6 @@ input = $stdin.read
 
 puts(begin
   ToonFu.encode(JSON.parse(input))
-rescue JSON::ParserError, ToonFu::Error
+rescue
   input
 end)
