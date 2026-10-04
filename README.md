@@ -147,6 +147,23 @@ decoder = ToonFu::Decoder.new(indent_size: 4) # reuse for many documents
 decoder.decode(text)
 ```
 
+## On the command line
+
+The gem installs a `toon` executable that encodes JSON on stdin — handy for reading a command's output in fewer tokens:
+
+```bash
+$ gh api repos/ruby/ruby/pulls --jq '.[0] | {number, title}' | toon
+number: 13579
+title: Fix a typo
+```
+
+Input it cannot encode is passed through unchanged, so putting it at the end of a pipe never costs you the output:
+
+```bash
+$ git log --oneline -1 | toon
+b08ea2d feat: ship a toon executable
+```
+
 ## Compared with other Ruby TOON gems
 
 The only one that passes every spec fixture: toon-fu passes all 179 encode and all 359 decode fixtures. The table compares encoding — the 154 encode fixtures that use default options, which every gem can run; none of the others reads TOON back.
