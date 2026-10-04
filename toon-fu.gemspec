@@ -25,6 +25,8 @@ Gem::Specification.new do |spec|
     "rubygems_mfa_required" => "true"
   }
 
-  spec.files = Dir.glob("lib/**/*") + %w[README.md LICENSE]
+  spec.files = Dir.glob("lib/**/*") + Dir.glob("exe/**/*") + %w[README.md LICENSE]
   spec.require_paths = ["lib"]
+  spec.bindir = "exe"
+  spec.executables = ["toon"]
 end
