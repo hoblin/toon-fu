@@ -186,6 +186,8 @@ The gem version tracks the TOON specification it implements:
 - `MAJOR.MINOR` is the spec version: `X.Y.Z` speaks TOON `X.Y`.
 - `PATCH` is the gem's own: fixes and improvements within the same dialect.
 
+This release speaks `toon-spec: 4.1`.
+
 Pin the spec line with `gem "toon-fu", "~> X.Y.0"`: it takes our fixes and keeps you on the dialect you speak. The gem badge above shows the current release; the spec-drift badge turns red when a newer spec is released and toon-fu has not caught up yet.
 
 Release notes: [GitHub releases](https://github.com/hoblin/toon-fu/releases).
