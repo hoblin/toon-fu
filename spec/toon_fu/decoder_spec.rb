@@ -82,18 +82,29 @@ RSpec.describe ToonFu::Decoder do
         expect(decoder.decode("a\t: b")).to eq({"a\t" => "b"})
       end
 
-      it "treats a line of any whitespace as blank", :aggregate_failures do
-        ["   ", "\t", "\v"].each do |blank|
-          expect(decoder.decode("a: 1\n#{blank}\nb: 2")).to eq({"a" => 1, "b" => 2})
-        end
+      it "treats a line of spaces as blank" do
+        expect(decoder.decode("a: 1\n   \nb: 2")).to eq({"a" => 1, "b" => 2})
+      end
+
+      it "reads a line of other whitespace as content when strict", :aggregate_failures do
+        expect { decoder.decode("a: 1\n\t\nb: 2") }.to raise_error(ToonFu::Error, /tab/)
+        expect { decoder.decode("a: 1\n\v\nb: 2") }.to raise_error(ToonFu::Error, /colon/)
+      end
+
+      it "treats a line of spaces and tabs as blank when not strict" do
+        expect(described_class.new(strict: false).decode("a: 1\n \t \nb: 2")).to eq({"a" => 1, "b" => 2})
       end
     end
 
     context "with a root form carrying indentation" do
-      it "classifies it by its content", :aggregate_failures do
-        expect(decoder.decode("  []")).to eq([])
-        expect(decoder.decode("  hello")).to eq("hello")
-        expect(decoder.decode("  42")).to eq(42)
+      it "refuses it as over-indented", :aggregate_failures do
+        expect { decoder.decode("  []") }.to raise_error(ToonFu::Error, /no scope/)
+        expect { decoder.decode("  hello") }.to raise_error(ToonFu::Error, /no scope/)
+        expect { decoder.decode("  a: 1") }.to raise_error(ToonFu::Error, /no scope/)
+      end
+
+      it "skips an indented key-value line when not strict" do
+        expect(described_class.new(strict: false).decode("  a: 1\nb: 2")).to eq({"b" => 2})
       end
     end
 
@@ -191,6 +202,18 @@ RSpec.describe ToonFu::Decoder do
 
       it "reads the line as a key-value pair when not strict" do
         expect(described_class.new(strict: false).decode("a[2]{x,y}: 1,2")).to eq({"a[2]{x,y}" => "1,2"})
+      end
+    end
+
+    context "with a legacy [0] header carrying inline values" do
+      it "refuses the count mismatch when strict" do
+        expect { decoder.decode("a[0]: 1,2") }.to raise_error(ToonFu::Error, /2 values where the header declares 0/)
+      end
+    end
+
+    context "with a blank line inside a list-item object" do
+      it "refuses it between later fields when strict" do
+        expect { decoder.decode("a[1]:\n  - x: 1\n    y: 2\n\n    z: 3") }.to raise_error(ToonFu::Error, /blank line/)
       end
     end
 

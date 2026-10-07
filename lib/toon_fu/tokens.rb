@@ -2,7 +2,7 @@
 
 module ToonFu
   module Tokens
-    QUOTED = /"(?:[^"\\]|\\.)*"/
+    QUOTED = /"(?:[^"\\]|\\.?)*"?/
     UNTIL_COLON = /[^":]+/
     UNTIL_BRACKET = /[^":\[]+/
     UNTIL_BRACE = /[^"{]+/

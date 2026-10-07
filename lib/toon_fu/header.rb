@@ -9,7 +9,7 @@ module ToonFu
 
     def self.parse(content)
       bracket = Tokens.bracket_index(content)
-      return nil if bracket.nil?
+      return nil if bracket.nil? || Tokens.colon_index(content).nil?
 
       new(content, bracket).parse
     end
@@ -20,9 +20,9 @@ module ToonFu
       @malformed = false
     end
 
-    # A line carrying a bracket segment is either a header, or an attempt at
-    # one that §6 makes a strict-mode error; only a line without one falls
-    # through to the key-value class untouched.
+    # A line whose first unquoted "[" precedes its first unquoted colon is
+    # either a header, or an attempt at one that §5.2 makes a strict-mode
+    # error; every other line falls through to the key-value class untouched.
     def malformed?
       @malformed
     end

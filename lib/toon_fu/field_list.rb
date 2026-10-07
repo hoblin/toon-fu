@@ -37,16 +37,21 @@ module ToonFu
     end
 
     def split(entry)
+      entry = Tokens.trim(entry)
+      return [nil, nil] if entry.empty?
+
       brace = Tokens.brace_index(entry)
-      return [Tokens.key(entry), nil] if brace.nil?
+      return [Token.key(entry), nil] if brace.nil?
 
       name = entry[0...brace]
+      return [nil, nil] if name.empty? || name.match?(/\s\z/)
+
       group = entry[brace..]
       closing = Tokens.closing_brace(group)
       return [nil, nil] unless closing == group.length - 1
 
       nested = self.class.parse(group[1...closing], @delimiter)
-      nested.nil? ? [nil, nil] : [Tokens.key(name), nested]
+      nested.nil? ? [nil, nil] : [Token.key(name), nested]
     end
   end
 end
