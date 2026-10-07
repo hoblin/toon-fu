@@ -138,7 +138,7 @@ ToonFu.decode("tags[3]: a,b")
 
 ### Options
 
-- `strict:` — `true` (default) checks what the spec requires: declared lengths, row widths, duplicate keys, indentation. Pass `false` to read a document that bends those rules — a declared length is ignored, a duplicate key takes its last value.
+- `strict:` — `true` (default) checks what the spec requires: declared lengths, row widths, duplicate keys, indentation. Pass `false` to read a document that bends those rules — a declared length is ignored, a duplicate key takes its last value, a stray over-indented line is skipped.
 - `indent_size:` — spaces per nesting level, default `2`.
 
 ```ruby

@@ -20,9 +20,9 @@ module ToonFu
       @malformed = false
     end
 
-    # A line whose first unquoted "[" precedes its first unquoted colon is
-    # either a header, or an attempt at one that §5.2 makes a strict-mode
-    # error; every other line falls through to the key-value class untouched.
+    # A line whose first unquoted "[" precedes its first unquoted colon is an
+    # array-header line; one that fails the §6 grammar is malformed, a
+    # strict-mode error (§5.2).
     def malformed?
       @malformed
     end
@@ -30,7 +30,7 @@ module ToonFu
     def parse
       @key = @bracket.zero? ? nil : @content[0...@bracket]
       return nil unless @key.nil? || Tokens.whole_token?(@key)
-      return broken if @key&.match?(/\s\z/)
+      return broken if @key&.match?(Tokens::TRAILING_WHITESPACE)
       return broken unless (closing = @content.index("]", @bracket))
 
       return broken unless segment(@content[(@bracket + 1)...closing])

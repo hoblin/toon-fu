@@ -8,7 +8,7 @@ module ToonFu
       @strict = strict
       @indent_size = indent_size
       @depth = 0
-      @span = false
+      @in_span = false
     end
 
     def read(text)
@@ -89,7 +89,7 @@ module ToonFu
     def field(line, depth)
       header = usable(Header.parse(line.content), line)
       return [Tokens.key(header.key), header_value(header, depth)] if header&.key
-      raise Error, "cannot decode a keyless array header in object field position on line #{line.number}: #{line.text}" if header
+      misplaced(line, "a keyless array header in object field position") if header
 
       colon = Tokens.colon_index(line.content)
       raise Error, "cannot decode a line without a colon after its key on line #{line.number}: #{line.text}" if colon.nil?
@@ -143,10 +143,14 @@ module ToonFu
     end
 
     def item_header(header, line)
-      return item_object(line.item_content, line.depth) if header.key
-      raise Error, "cannot decode a keyless fields-bearing header as a list item on line #{line.number}: #{line.text}" if header.fields?
+      return array(header, line.depth) unless header.key || header.fields?
 
-      array(header, line.depth)
+      misplaced(line, "a keyless fields-bearing header as a list item") unless header.key
+      item_object(line.item_content, line.depth)
+    end
+
+    def misplaced(line, what)
+      raise Error, "cannot decode #{what} on line #{line.number}: #{line.text}" if @strict
     end
 
     def item_object(rest, depth)
@@ -201,7 +205,7 @@ module ToonFu
     end
 
     def gather(parent, stop: nil)
-      outer = @span
+      outer = @in_span
       collected = []
       depth = content_depth(parent)
       while depth && (line = @lines.peek) && line.depth > parent
@@ -212,19 +216,17 @@ module ToonFu
         break if stop&.call(line)
 
         take
-        @span = true
+        @in_span = true
         collected << yield(line)
       end
       collected
     ensure
-      @span = outer
+      @in_span = outer
     end
 
     def take
       line = @lines.next
-      return line unless @strict && @span && line.after_blank
-
-      raise Error, "cannot decode a blank line inside a header span, before line #{line.number}: #{line.text}"
+      raise Error, "cannot decode a blank line inside a header span, before line #{line.number}: #{line.text}" if @strict && @in_span && line.after_blank
     end
 
     def row(header, line, text = line.content)

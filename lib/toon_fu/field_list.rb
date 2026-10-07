@@ -44,7 +44,7 @@ module ToonFu
       return [Token.key(entry), nil] if brace.nil?
 
       name = entry[0...brace]
-      return [nil, nil] if name.empty? || name.match?(/\s\z/)
+      return [nil, nil] if name.empty? || name.match?(Tokens::TRAILING_WHITESPACE)
 
       group = entry[brace..]
       closing = Tokens.closing_brace(group)

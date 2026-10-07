@@ -2,7 +2,8 @@
 
 module ToonFu
   module Tokens
-    QUOTED = /"(?:[^"\\]|\\.?)*"?/
+    QUOTE_SPAN = /"(?:[^"\\]|\\.?)*"?/
+    TRAILING_WHITESPACE = /[[:space:]]\z/
     UNTIL_COLON = /[^":]+/
     UNTIL_BRACKET = /[^":\[]+/
     UNTIL_BRACE = /[^"{]+/
@@ -17,7 +18,7 @@ module ToonFu
       until scanner.eos?
         next if scanner.skip(pattern)
         return scanner.charpos if stops.include?(scanner.peek(1))
-        return nil unless scanner.skip(QUOTED)
+        scanner.skip(QUOTE_SPAN)
       end
       nil
     end
@@ -40,7 +41,7 @@ module ToonFu
       depth = 0
       scanner = StringScanner.new(text)
       until scanner.eos?
-        if scanner.skip(QUOTED)
+        if scanner.skip(QUOTE_SPAN)
           next
         elsif scanner.skip(/\{/)
           depth += 1
@@ -48,7 +49,7 @@ module ToonFu
           depth -= 1
           return scanner.charpos - 1 if depth.zero?
         else
-          scanner.skip(/[^"{}]+/) || scanner.skip(/./)
+          scanner.skip(/[^"{}]+/)
         end
       end
       nil
@@ -60,7 +61,7 @@ module ToonFu
       depth = 0
       scanner = StringScanner.new(text)
       until scanner.eos?
-        if (quoted = scanner.scan(QUOTED))
+        if (quoted = scanner.scan(QUOTE_SPAN))
           current << quoted
         elsif depth.zero? && scanner.skip(delimiter)
           entries << current
@@ -81,13 +82,13 @@ module ToonFu
       current = +""
       scanner = StringScanner.new(text)
       until scanner.eos?
-        if (quoted = scanner.scan(QUOTED))
+        if (quoted = scanner.scan(QUOTE_SPAN))
           current << quoted
         elsif scanner.skip(delimiter)
           cells << current
           current = +""
         else
-          current << (scanner.scan(UNTIL_CELL_END.fetch(delimiter)) || scanner.getch)
+          current << scanner.scan(UNTIL_CELL_END.fetch(delimiter))
         end
       end
       cells << current
