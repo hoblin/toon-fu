@@ -82,18 +82,28 @@ RSpec.describe ToonFu::Decoder do
         expect(decoder.decode("a\t: b")).to eq({"a\t" => "b"})
       end
 
-      it "treats a line of any whitespace as blank", :aggregate_failures do
-        ["   ", "\t", "\v"].each do |blank|
-          expect(decoder.decode("a: 1\n#{blank}\nb: 2")).to eq({"a" => 1, "b" => 2})
-        end
+      it "refuses a line of tabs as indentation when strict" do
+        expect { decoder.decode("a: 1\n\t\nb: 2") }.to raise_error(ToonFu::Error, /tab/)
+      end
+
+      it "reads a line of other whitespace as content" do
+        expect { decoder.decode("a: 1\n\v\nb: 2") }.to raise_error(ToonFu::Error, /colon/)
+      end
+
+      it "treats a line of spaces and tabs as blank when not strict" do
+        expect(described_class.new(strict: false).decode("a: 1\n \t \nb: 2")).to eq({"a" => 1, "b" => 2})
       end
     end
 
     context "with a root form carrying indentation" do
-      it "classifies it by its content", :aggregate_failures do
-        expect(decoder.decode("  []")).to eq([])
-        expect(decoder.decode("  hello")).to eq("hello")
-        expect(decoder.decode("  42")).to eq(42)
+      it "refuses it as over-indented", :aggregate_failures do
+        expect { decoder.decode("  []") }.to raise_error(ToonFu::Error, /no scope/)
+        expect { decoder.decode("  hello") }.to raise_error(ToonFu::Error, /no scope/)
+        expect { decoder.decode("  a: 1") }.to raise_error(ToonFu::Error, /no scope/)
+      end
+
+      it "skips an indented key-value line when not strict" do
+        expect(described_class.new(strict: false).decode("  a: 1\nb: 2")).to eq({"b" => 2})
       end
     end
 
@@ -192,6 +202,48 @@ RSpec.describe ToonFu::Decoder do
       it "reads the line as a key-value pair when not strict" do
         expect(described_class.new(strict: false).decode("a[2]{x,y}: 1,2")).to eq({"a[2]{x,y}" => "1,2"})
       end
+    end
+
+    context "with a legacy [0] header carrying inline values" do
+      it "refuses the count mismatch when strict" do
+        expect { decoder.decode("a[0]: 1,2") }.to raise_error(ToonFu::Error, /2 values where the header declares 0/)
+      end
+    end
+
+    context "with whitespace other than a space before a bracket segment" do
+      it "refuses the header when strict" do
+        expect { decoder.decode("n\u00a0[1]: y") }.to raise_error(ToonFu::Error, /malformed/)
+      end
+
+      it "reads the line as a key-value pair when not strict" do
+        expect(described_class.new(strict: false).decode("n\u00a0[1]: y")).to eq({"n\u00a0[1]" => "y"})
+      end
+    end
+
+    context "with a keyless fields-bearing header as a list item" do
+      it "refuses it when strict" do
+        expect { decoder.decode("b[1]:\n  - [1]{a}:") }.to raise_error(ToonFu::Error, /keyless/)
+      end
+
+      it "reads it as a key-value pair when not strict" do
+        expect(described_class.new(strict: false).decode("b[2]:\n  - [1]{a}: 2\n  - [1]{a}:")).to eq({"b" => [{"[1]{a}" => 2}, {"[1]{a}" => {}}]})
+      end
+    end
+
+    context "with a keyless header in object field position" do
+      it "refuses it when strict" do
+        expect { decoder.decode("a: 1\n[2]: x,y") }.to raise_error(ToonFu::Error, /keyless/)
+      end
+
+      it "reads it as a key-value pair when not strict" do
+        expect(described_class.new(strict: false).decode("a: 1\n[2]: x,y")).to eq({"a" => 1, "[2]" => "x,y"})
+      end
+    end
+
+    it "names the line of a structural error", :aggregate_failures do
+      expect { decoder.decode("a[1]:\n  - x: 1\n    y: 2\n\n    z: 3") }.to raise_error(ToonFu::Error, /blank line.*line 5/)
+      expect { decoder.decode("a:\n    b: 1") }.to raise_error(ToonFu::Error, /depth jump on line 2/)
+      expect { described_class.new(strict: false).decode("a: 1\n  hello") }.to raise_error(ToonFu::Error, /bare token line.*line 2/)
     end
 
     it "names the line a duplicate key repeats on", :aggregate_failures do

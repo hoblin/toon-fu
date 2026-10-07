@@ -8,6 +8,7 @@ module ToonFu
       @strict = strict
       @indent_size = indent_size
       @depth = 0
+      @in_span = false
     end
 
     def read(text)
@@ -21,18 +22,19 @@ module ToonFu
 
     def root
       line = @lines.peek
+      return object(-1, 0) unless line.depth.zero?
       return empty_array_root if line.content == "[]"
 
       header = usable(Header.parse(line.content), line)
       return keyless_root(header) if header && header.key.nil?
-      return scalar_root(line) if @lines.one? && Tokens.colon_index(line.content).nil?
+      return scalar_root(line) if @lines.one? && scalar?(line)
 
-      object(0)
+      object(-1, 0)
     end
 
     def keyless_root(header)
       @lines.next
-      value = header.fields? ? table(header, 1) : array(header, 1)
+      value = header.fields? ? table(header, 0) : array(header, 0)
       trailing
       value
     end
@@ -54,24 +56,28 @@ module ToonFu
       raise Error, "cannot decode content after the root form: #{@lines.peek.text}"
     end
 
-    def object(depth, result = {})
-      while (line = @lines.peek) && line.depth >= depth
-        if line.depth > depth
+    def object(parent, depth, result = {})
+      while (line = @lines.peek) && line.depth > parent
+        if line.depth == depth
+          take
+          key, value = field(line, depth)
+          store(result, key, value, line)
+        else
           orphan(line)
-          next
         end
-
-        @lines.next
-        key, value = field(line, depth)
-        store(result, key, value, line)
       end
       result
     end
 
     def orphan(line)
       raise Error, "cannot decode a line that belongs to no scope on line #{line.number}: #{line.text}" if @strict
+      raise Error, "cannot decode a bare token line inside a scope on line #{line.number}: #{line.text}" if scalar?(line)
 
       @lines.next
+    end
+
+    def scalar?(line)
+      Tokens.colon_index(line.content).nil?
     end
 
     def store(result, key, value, line)
@@ -83,7 +89,7 @@ module ToonFu
     def field(line, depth)
       header = usable(Header.parse(line.content), line)
       return [Tokens.key(header.key), header_value(header, depth)] if header&.key
-      raise Error, "cannot decode a keyless array header in object field position on line #{line.number}: #{line.text}" if header
+      misplaced(line, "a keyless array header in object field position") if header
 
       colon = Tokens.colon_index(line.content)
       raise Error, "cannot decode a line without a colon after its key on line #{line.number}: #{line.text}" if colon.nil?
@@ -99,30 +105,23 @@ module ToonFu
       Token.decode(text)
     end
 
-    def nested(depth)
-      line = @lines.peek
-      return {} if line.nil? || line.depth <= depth
+    def nested(parent)
+      depth = content_depth(parent)
+      return {} if depth.nil?
 
-      guard(line)
-      descend { object(depth + 1) }
+      descend { object(parent, depth) }
     end
 
     def header_value(header, depth)
-      return table(header, depth + 1) if header.fields?
-      return [] if header.length.zero? && !items?(depth + 1)
-
-      array(header, depth + 1)
+      header.fields? ? table(header, depth) : array(header, depth)
     end
 
-    def items?(depth)
-      line = @lines.peek
-      !line.nil? && line.depth == depth
-    end
-
-    def array(header, depth)
+    def array(header, parent)
       return inline(header) unless header.inline.empty?
 
-      descend { list(header, depth) }
+      items = descend { gather(parent, stop: ->(line) { !line.item? }) { |line| item(line) } }
+      count(items.length, header, "item")
+      items
     end
 
     def inline(header)
@@ -131,46 +130,27 @@ module ToonFu
       cells
     end
 
-    def list(header, depth)
-      items = []
-      while (line = @lines.peek) && line.depth == depth && line.item?
-        span(line) unless items.empty?
-        @lines.next
-        items << item(line, depth)
-      end
-      scalar_line(@lines.peek, depth)
-      count(items.length, header, "item")
-      items
-    end
-
-    # A scalar line is valid only as a root primitive; inside a scope it is a
-    # structural error in strict and non-strict mode alike (§5.2, §14.2).
-    def scalar_line(line, depth)
-      return if line.nil? || line.depth != depth || Tokens.colon_index(line.content)
-
-      header = Header.parse(line.content)
-      return if header && !header.malformed?
-
-      raise Error, "cannot decode a bare token line inside a scope on line #{line.number}: #{line.text}"
-    end
-
-    def item(line, depth)
+    def item(line)
       rest = line.item_content
       return {} if rest.empty?
       return [] if rest == "[]"
 
       header = usable(Header.parse(rest), line)
-      return item_header(header, line, depth) if header
-      return item_object(rest, depth) if Tokens.colon_index(rest)
+      return item_header(header, line) if header
+      return item_object(rest, line.depth) if Tokens.colon_index(rest)
 
       Token.decode(Tokens.trim(rest))
     end
 
-    def item_header(header, line, depth)
-      return item_object(line.item_content, depth) if header.key
-      raise Error, "cannot decode a keyless fields-bearing header as a list item on line #{line.number}: #{line.text}" if header.fields?
+    def item_header(header, line)
+      return array(header, line.depth) unless header.key || header.fields?
 
-      array(header, depth + 1)
+      misplaced(line, "a keyless fields-bearing header as a list item") unless header.key
+      item_object(line.item_content, line.depth)
+    end
+
+    def misplaced(line, what)
+      raise Error, "cannot decode #{what} on line #{line.number}: #{line.text}" if @strict
     end
 
     def item_object(rest, depth)
@@ -178,20 +158,18 @@ module ToonFu
       key, value = descend { field(synthetic, depth + 1) }
       result = {}
       store(result, key, value, synthetic)
-      following = @lines.peek
-      span(following) if following && following.depth == depth + 1
-      descend { object(depth + 1, result) }
+      descend { object(depth, depth + 1, result) }
     end
 
-    def table(header, depth)
+    def table(header, parent)
       raise Error, "cannot decode a field name repeated in one field list: #{header.duplicate.inspect}" if @strict && header.duplicate
 
-      header.keyed? ? entries(header, depth) : rows(header, depth)
+      header.keyed? ? entries(header, parent) : rows(header, parent)
     end
 
-    def rows(header, depth)
+    def rows(header, parent)
       collected = descend do
-        gather(depth, stop: ->(line) { key_value_line?(line, header.delimiter) }) { |line| row(header, line) }
+        gather(parent, stop: ->(line) { key_value_line?(line, header.delimiter) }) { |line| row(header, line) }
       end
       count(collected.length, header, "row")
       collected
@@ -207,10 +185,10 @@ module ToonFu
       cell.nil? || colon < cell
     end
 
-    def entries(header, depth)
+    def entries(header, parent)
       result = {}
       collected = descend do
-        gather(depth) do |line|
+        gather(parent) do |line|
           colon = Tokens.colon_index(line.content)
           if colon.nil?
             raise Error, "cannot decode an entry row without a colon on line #{line.number}: #{line.text}" if @strict
@@ -226,22 +204,29 @@ module ToonFu
       result
     end
 
-    def gather(depth, stop: nil)
+    def gather(parent, stop: nil)
+      outer = @in_span
       collected = []
-      while (line = @lines.peek) && line.depth == depth
+      depth = content_depth(parent)
+      while depth && (line = @lines.peek) && line.depth > parent
+        if line.depth != depth
+          orphan(line)
+          next
+        end
         break if stop&.call(line)
 
-        span(line) unless collected.empty?
-        @lines.next
+        take
+        @in_span = true
         collected << yield(line)
       end
       collected
+    ensure
+      @in_span = outer
     end
 
-    def span(line)
-      return unless @strict && line.after_blank
-
-      raise Error, "cannot decode a blank line inside a header span, before line #{line.number}: #{line.text}"
+    def take
+      line = @lines.next
+      raise Error, "cannot decode a blank line inside a header span, before line #{line.number}: #{line.text}" if @strict && @in_span && line.after_blank
     end
 
     def row(header, line, text = line.content)
@@ -285,10 +270,12 @@ module ToonFu
       nil
     end
 
-    def guard(line)
-      return unless @strict && line.depth > @depth + 1
+    def content_depth(parent)
+      line = @lines.peek
+      return if line.nil? || line.depth <= parent
+      raise Error, "cannot decode a depth jump on line #{line.number}: #{line.text}" if @strict && line.depth > parent + 1
 
-      raise Error, "cannot decode a depth jump on line #{line.number}: #{line.text}"
+      line.depth
     end
 
     def descend

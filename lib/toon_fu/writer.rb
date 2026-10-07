@@ -23,6 +23,7 @@ module ToonFu
       case value
       when Hash then mapping("", value)
       when Array then array("", value)
+      when String then line(@strings.root(value))
       else line(scalar(value))
       end
     end

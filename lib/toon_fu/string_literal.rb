@@ -19,6 +19,10 @@ module ToonFu
       quote?(string) ? quote(string) : string
     end
 
+    def root(string)
+      string.start_with?(Lines::BOM) ? quote(string) : encode(string)
+    end
+
     def key(string)
       BARE_KEY.match?(string) ? string : quote(string)
     end

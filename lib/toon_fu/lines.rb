@@ -29,8 +29,8 @@ module ToonFu
     BOM = "\u{feff}"
     COMMENT = /\A *#/
     TRAILING_SPACES = / +\z/
-    BLANK = /\A\s*\z/
     INDENTATION = /\A[ \t]*/
+    BLANK_WITH_TABS = /\A[ \t]*\z/
 
     def initialize(text, strict, indent_size)
       @strict = strict
@@ -69,7 +69,7 @@ module ToonFu
         line = raw.delete_suffix("\r").sub(TRAILING_SPACES, "")
         next if COMMENT.match?(line)
 
-        if BLANK.match?(line)
+        if blank?(line)
           blank = true
           next
         end
@@ -78,6 +78,10 @@ module ToonFu
         blank = false
         built
       end
+    end
+
+    def blank?(line)
+      @strict ? line.empty? : BLANK_WITH_TABS.match?(line)
     end
 
     def build(line, number, blank)
