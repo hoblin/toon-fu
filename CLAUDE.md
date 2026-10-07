@@ -39,6 +39,7 @@ bundle exec standardrb [--fix]
 
 - New spec version → `X.Y.0`; our fixes and additions → patch. The spec-drift workflow fails daily when a newer spec release exists.
 - Release: bump `lib/toon_fu/version.rb` in a PR, merge, `git tag vX.Y.Z && git push origin vX.Y.Z`, the maintainer approves the `release` deployment. Release notes are GitHub's generated notes.
+- After a new spec version's gem is released, open a PR to `toon-format/toon` that sets toon-fu's spec version in the Ruby row of `docs/ecosystem/implementations.md` (community implementations list).
 - Supply chain: actions pinned by full SHA, least-privilege `permissions`, `Gemfile.lock` committed, publishing through trusted publishing only.
 
 Design history: `thoughts/shared/notes/2026-09-24/toon-fu-ruby-toon-gem-decisions.md`.
