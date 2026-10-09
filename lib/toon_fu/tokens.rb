@@ -3,7 +3,7 @@
 module ToonFu
   module Tokens
     QUOTE_SPAN = /"(?:[^"\\]|\\.?)*"?/
-    TRAILING_WHITESPACE = /[[:space:]]\z/
+    TRAILING_WHITESPACE = /[ \t]\z/
     UNTIL_COLON = /[^":]+/
     UNTIL_BRACKET = /[^":\[]+/
     UNTIL_BRACE = /[^"{]+/

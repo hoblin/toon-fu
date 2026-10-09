@@ -2,7 +2,7 @@
 
 module ToonFu
   class Line
-    ITEM = /\A-(?: |\z)/
+    ITEM = /\A-(?: +|\z)/
 
     attr_reader :content, :depth, :number, :text
 

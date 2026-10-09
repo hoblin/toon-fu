@@ -3,13 +3,13 @@
 module ToonFu
   # Decodes TOON with one set of options, for callers that decode many.
   class Decoder
-    # @param strict [Boolean] whether to enforce the spec's strict-mode
-    #   checks; with +false+ duplicate keys resolve last-write-wins, leading
-    #   spaces that are not a multiple of indent_size are accepted, a tab in
-    #   indentation is accepted and counts as one level, a line of spaces and
-    #   tabs is blank, a scope's first line sets the scope's depth, an
-    #   over-indented line is skipped unless it is a bare token, and a
-    #   malformed or misplaced header is read as a key-value line
+    # @param strict [Boolean] whether to enforce every check of the spec;
+    #   with +false+ exactly the spec's five recoveries apply: a declared
+    #   length is ignored, duplicate keys resolve last-write-wins, a tab in
+    #   indentation counts as one level and leading spaces need not be a
+    #   multiple of indent_size, a line of spaces and tabs is blank, a blank
+    #   line inside a header span is ignored, and a scope's first line sets
+    #   the scope's depth
     # @param indent_size [Integer] spaces per nesting level
     # @raise [ArgumentError] when strict is not a boolean or indent_size is
     #   not a positive Integer
@@ -43,13 +43,13 @@ module ToonFu
     # @raise [Error] for text that is not a String or not valid UTF-8; for a
     #   number outside the Float range; for an invalid escape, an
     #   unterminated quoted string, or content after a closing quote; for a
-    #   key without a colon; for a bare token line inside a scope; for
-    #   content after a completed root form; for nesting beyond the depth
-    #   limit; and, when strict, for a declared length or row width that
-    #   does not match, a malformed or misplaced header, a duplicate key, a
+    #   key without a colon; for a malformed or misplaced header; for a row
+    #   width that does not match; for a line that belongs to no scope, an
+    #   over-indented or indented first line included; for content after a
+    #   completed root form; for nesting beyond the depth limit; and, when
+    #   strict, for a declared length that does not match, a duplicate key, a
     #   blank line inside a header's scope, a tab in indentation, indentation
-    #   that is not a multiple of indent_size, a depth jump, and an
-    #   over-indented line, an indented first line included
+    #   that is not a multiple of indent_size, and a depth jump
     def decode(text)
       Reader.new(@strict, @indent_size).read(utf8(text))
     end

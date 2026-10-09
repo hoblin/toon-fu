@@ -25,7 +25,7 @@ module ToonFu
       return object(-1, 0) unless line.depth.zero?
       return empty_array_root if line.content == "[]"
 
-      header = usable(Header.parse(line.content), line)
+      header = header(line)
       return keyless_root(header) if header && header.key.nil?
       return scalar_root(line) if @lines.one? && scalar?(line)
 
@@ -70,10 +70,7 @@ module ToonFu
     end
 
     def orphan(line)
-      raise Error, "cannot decode a line that belongs to no scope on line #{line.number}: #{line.text}" if @strict
-      raise Error, "cannot decode a bare token line inside a scope on line #{line.number}: #{line.text}" if scalar?(line)
-
-      @lines.next
+      raise Error, "cannot decode a line that belongs to no scope on line #{line.number}: #{line.text}"
     end
 
     def scalar?(line)
@@ -87,7 +84,7 @@ module ToonFu
     end
 
     def field(line, depth)
-      header = usable(Header.parse(line.content), line)
+      header = header(line)
       return [Tokens.key(header.key), header_value(header, depth)] if header&.key
       misplaced(line, "a keyless array header in object field position") if header
 
@@ -135,7 +132,7 @@ module ToonFu
       return {} if rest.empty?
       return [] if rest == "[]"
 
-      header = usable(Header.parse(rest), line)
+      header = header(line, rest)
       return item_header(header, line) if header
       return item_object(rest, line.depth) if Tokens.colon_index(rest)
 
@@ -150,7 +147,7 @@ module ToonFu
     end
 
     def misplaced(line, what)
-      raise Error, "cannot decode #{what} on line #{line.number}: #{line.text}" if @strict
+      raise Error, "cannot decode #{what} on line #{line.number}: #{line.text}"
     end
 
     def item_object(rest, depth)
@@ -190,15 +187,11 @@ module ToonFu
       collected = descend do
         gather(parent) do |line|
           colon = Tokens.colon_index(line.content)
-          if colon.nil?
-            raise Error, "cannot decode an entry row without a colon on line #{line.number}: #{line.text}" if @strict
+          raise Error, "cannot decode an entry row without a colon on line #{line.number}: #{line.text}" if colon.nil?
 
-            next nil
-          end
           [Tokens.key(line.content[0...colon]), row(header, line, line.content[(colon + 1)..]), line]
         end
       end
-      collected.compact!
       count(collected.length, header, "entry row")
       collected.each { |key, value, line| store(result, key, value, line) }
       result
@@ -209,10 +202,7 @@ module ToonFu
       collected = []
       depth = content_depth(parent)
       while depth && (line = @lines.peek) && line.depth > parent
-        if line.depth != depth
-          orphan(line)
-          next
-        end
+        orphan(line) if line.depth != depth
         break if stop&.call(line)
 
         take
@@ -238,16 +228,7 @@ module ToonFu
 
     def shape(fields, cells)
       fields.each_with_object({}) do |(name, nested), result|
-        if nested
-          result[name] = shape(nested, cells)
-        else
-          cell = begin
-            cells.next
-          rescue StopIteration
-            next
-          end
-          result[name] = Token.decode(Tokens.trim(cell))
-        end
+        result[name] = nested ? shape(nested, cells) : Token.decode(Tokens.trim(cells.next))
       end
     end
 
@@ -258,16 +239,16 @@ module ToonFu
     end
 
     def width(actual, header, line)
-      return unless @strict && actual != header.leaves.length
+      return if actual == header.leaves.length
 
       raise Error, "cannot decode #{actual} cells on line #{line.number} where the header declares #{header.leaves.length} field#{"s" unless header.leaves.length == 1}"
     end
 
-    def usable(header, line)
-      return header unless header&.malformed?
-      raise Error, "cannot decode a malformed array header on line #{line.number}: #{line.text}" if @strict
+    def header(line, content = line.content)
+      header = Header.parse(content)
+      raise Error, "cannot decode a malformed array header on line #{line.number}: #{line.text}" if header&.malformed?
 
-      nil
+      header
     end
 
     def content_depth(parent)

@@ -138,7 +138,7 @@ ToonFu.decode("tags[3]: a,b")
 
 ### Options
 
-- `strict:` — `true` (default) checks what the spec requires: declared lengths, row widths, duplicate keys, indentation. Pass `false` to read a document that bends those rules — a declared length is ignored, a duplicate key takes its last value, a stray over-indented line is skipped unless it is a bare token, which raises in either mode.
+- `strict:` — `true` (default) checks everything the spec requires. Pass `false` for the spec's five recoveries and nothing more: a declared length is ignored, a duplicate key takes its last value, a tab indents one level, a blank line inside a table is skipped, and a scope's first line sets its depth. Everything else — a malformed header, a row of the wrong width, a stray over-indented line — raises in either mode.
 - `indent_size:` — spaces per nesting level, default `2`.
 
 ```ruby
@@ -166,17 +166,17 @@ b08ea2d feat: ship a toon executable
 
 ## Compared with other Ruby TOON gems
 
-The only one that passes every spec fixture: toon-fu passes all 160 encode and all 385 decode fixtures. The table compares encoding — the 138 encode fixtures that use default options, which every gem can run; none of the others reads TOON back.
+The only one that passes every spec fixture: toon-fu passes all 160 encode and all 404 decode fixtures. The table compares encoding — the 138 encode fixtures that use default options, which every gem can run; none of the others reads TOON back.
 
 | Gem | Spec fixtures passed | Speed vs toon-fu |
 |---|---:|---:|
 | **toon-fu** | **138 / 138** | **1.00×** |
-| sorbet-toon 0.1.0 | 104 / 138 | 0.63× |
-| toon-ruby 0.1.1 | 100 / 138 | 0.62× |
-| toon_my_json 0.1.0 | 48 / 138 | 1.62× |
-| toon-format 0.1.2 | 40 / 138 | 1.31× |
+| sorbet-toon 0.1.0 | 104 / 138 | 0.55× |
+| toon-ruby 0.1.1 | 100 / 138 | 0.55× |
+| toon_my_json 0.1.0 | 46 / 138 | 1.49× |
+| toon-format 0.1.2 | 40 / 138 | 1.11× |
 
-The Ruby TOON encoders with more than 10,000 downloads, measured by [`benchmark/run.rb`](benchmark/run.rb) on Ruby 3.4.11 (2026-10-07). **Spec fixtures** are the spec's own encode fixtures that use default options. **Speed** is the geometric mean of encodes per second over five workloads — tables of 100 and 1000 rows, nested objects, a list of mixed objects, strings needing quotes — relative to toon-fu.
+The Ruby TOON encoders with more than 10,000 downloads, measured by [`benchmark/run.rb`](benchmark/run.rb) on Ruby 3.4.11 (2026-10-10). **Spec fixtures** are the spec's own encode fixtures that use default options. **Speed** is the geometric mean of encodes per second over five workloads — tables of 100 and 1000 rows, nested objects, a list of mixed objects, strings needing quotes — relative to toon-fu.
 
 What falls through the gaps:
 
@@ -203,7 +203,7 @@ The gem version tracks the TOON specification it implements:
 - `MAJOR.MINOR` is the spec version: `X.Y.Z` speaks TOON `X.Y`.
 - `PATCH` is the gem's own: fixes and improvements within the same dialect.
 
-This release speaks `toon-spec: 4.3`.
+This release speaks `toon-spec: 4.4`.
 
 Pin the spec line with `gem "toon-fu", "~> X.Y.0"`: it takes our fixes and keeps you on the dialect you speak. The gem badge above shows the current release; the spec-drift badge turns red when a newer spec is released and toon-fu has not caught up yet.
 

@@ -21,8 +21,8 @@ module ToonFu
     end
 
     # A line whose first unquoted "[" precedes its first unquoted colon is an
-    # array-header line; one that fails the §6 grammar is malformed, a
-    # strict-mode error (§5.2).
+    # array-header line; one that fails the §6 grammar is malformed, an
+    # error in either mode (§5.2, §14.2).
     def malformed?
       @malformed
     end
@@ -38,7 +38,7 @@ module ToonFu
       # §6: a keyed header's field list is required, and a fields-bearing
       # header carries no inline content.
       return broken if @keyed && !fields?
-      return broken if fields? && !@inline.strip.empty?
+      return broken if fields? && !Tokens.trim(@inline).empty?
 
       self
     end
