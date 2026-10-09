@@ -5,11 +5,12 @@ module ToonFu
   class Decoder
     # @param strict [Boolean] whether to enforce every check of the spec;
     #   with +false+ exactly the spec's five recoveries apply: a declared
-    #   length is ignored, duplicate keys resolve last-write-wins, a tab in
-    #   indentation counts as one level and leading spaces need not be a
-    #   multiple of indent_size, a line of spaces and tabs is blank, a blank
-    #   line inside a header span is ignored, and a scope's first line sets
-    #   the scope's depth
+    #   length is ignored; a duplicate key or a field name repeated in one
+    #   field list resolves last-write-wins, keeping its first position; a
+    #   tab in indentation counts as one level, leading spaces need not be a
+    #   multiple of indent_size and a line of spaces and tabs is blank; a
+    #   blank line inside a header span is ignored; and a scope's first line
+    #   sets the scope's depth
     # @param indent_size [Integer] spaces per nesting level
     # @raise [ArgumentError] when strict is not a boolean or indent_size is
     #   not a positive Integer
@@ -48,8 +49,9 @@ module ToonFu
     #   over-indented or indented first line included; for content after a
     #   completed root form; for nesting beyond the depth limit; and, when
     #   strict, for a declared length that does not match, a duplicate key, a
-    #   blank line inside a header's scope, a tab in indentation, indentation
-    #   that is not a multiple of indent_size, and a depth jump
+    #   field name repeated in one field list, a blank line inside a header
+    #   span, a tab in indentation, indentation that is not a multiple of
+    #   indent_size, and a depth jump
     def decode(text)
       Reader.new(@strict, @indent_size).read(utf8(text))
     end

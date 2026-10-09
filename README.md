@@ -138,7 +138,7 @@ ToonFu.decode("tags[3]: a,b")
 
 ### Options
 
-- `strict:` — `true` (default) checks everything the spec requires. Pass `false` for the spec's five recoveries and nothing more: a declared length is ignored, a duplicate key takes its last value, a tab indents one level, a blank line inside a table is skipped, and a scope's first line sets its depth. Everything else — a malformed header, a row of the wrong width, a stray over-indented line — raises in either mode.
+- `strict:` — `true` (default) checks everything the spec requires. Pass `false` for the spec's five recoveries and nothing more: a declared length is ignored, a duplicate key takes its last value, a tab indents one level, a blank line between an array's items or rows is skipped, and a scope's first line sets its depth. Everything else — a malformed header, a row of the wrong width, a stray over-indented line — raises in either mode.
 - `indent_size:` — spaces per nesting level, default `2`.
 
 ```ruby
