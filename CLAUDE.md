@@ -50,7 +50,8 @@ The spec-drift badge is red: a newer `toon-format/spec` release exists. Preceden
 3. Write the issue in the shape of #47: what changed upstream per section, the failing fixtures grouped by the rule they exercise, requirements, why MINOR and not patch. Then `/rpi:feature` from it.
 4. Implement by deleting what the spec no longer allows rather than guarding it; the code should read as the spec's own list. Unit specs asserting dropped behaviour go; new unit specs cover only what the fixtures cannot express.
 5. Release bits in the same PR: `VERSION` to `X.Y.0`, `bundle install` for `Gemfile.lock`, `Decoder`/`Encoder` YARD, README: the `toon-spec: X.Y` line, the fixture counts (`tests` entries per fixture file), the `strict:` description, and the comparison table re-run with `BUNDLE_GEMFILE=benchmark/Gemfile bundle exec ruby benchmark/run.rb` after the version bump, with its date.
-6. PR body as #48: summary per encoder/decoder/release with `(§n)` citations, test plan, breaking changes for input no conforming encoder emits.
-7. After the release: bump the Ruby row in `docs/ecosystem/implementations.md` from the `hoblin/toon` fork (precedents toon-format/toon#361, #365), and bump the dependency in `linear-toon-mcp` (`~> X.Y.0` in the gemspec and CLAUDE.md, patch version, tag, push with tags).
+6. Newcomers: `ruby benchmark/newcomers.rb $(gh release view vPREV --json publishedAt --jq .publishedAt)` lists the TOON gems released since our previous release. One that passes the README's cutoff, or claims a spec version at or above the best in the table, joins `benchmark/Gemfile`, `run.rb` and the README table and its gaps list.
+7. PR body as #48: summary per encoder/decoder/release with `(§n)` citations, test plan, breaking changes for input no conforming encoder emits.
+8. After the release: bump the Ruby row in `docs/ecosystem/implementations.md` from the `hoblin/toon` fork (precedents toon-format/toon#361, #365), and bump the dependency in `linear-toon-mcp` (`~> X.Y.0` in the gemspec and CLAUDE.md, patch version, tag, push with tags).
 
 Design history: `thoughts/shared/notes/2026-09-24/toon-fu-ruby-toon-gem-decisions.md`.
