@@ -166,7 +166,7 @@ b08ea2d feat: ship a toon executable
 
 ## Compared with other Ruby TOON gems
 
-The only one that passes every spec fixture: toon-fu passes all 160 encode and all 404 decode fixtures. The table compares encoding — the 138 encode fixtures that use default options, which every gem can run; none of the others reads TOON back.
+The only one that passes every spec fixture: toon-fu passes all 160 encode and all 404 decode fixtures. The table compares encoding — the 138 encode fixtures that use default options; the other 22 set a delimiter or an indent size, which the other gems do not take, and none of them reads TOON back.
 
 | Gem | Spec fixtures passed | Speed vs toon-fu |
 |---|---:|---:|
