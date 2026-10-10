@@ -2,7 +2,7 @@
 
 module ToonFu
   class Line
-    ITEM = /\A-(?: |\z)/
+    ITEM = /\A-(?: +|\z)/
 
     attr_reader :content, :depth, :number, :text
 
@@ -57,10 +57,6 @@ module ToonFu
       line
     end
 
-    def number
-      peek ? peek.number : @lines.length
-    end
-
     private
 
     def significant(text)
@@ -88,8 +84,6 @@ module ToonFu
       Line.new(line.sub(INDENTATION, ""), depth(line, number), number, line, blank)
     end
 
-    # Non-strict mode accepts a tab as indentation (§12), where each tab
-    # counts as one level; strict mode rejects it.
     def depth(line, number)
       indent = line[INDENTATION]
       raise Error, "cannot decode a line indented with a tab on line #{number}: #{line}" if @strict && indent.include?("\t")

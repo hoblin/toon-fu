@@ -3,6 +3,8 @@
 RSpec.describe ToonFu::Decoder do
   subject(:decoder) { described_class.new }
 
+  let(:lenient) { described_class.new(strict: false) }
+
   describe ".new" do
     it "rejects a strict that is not a boolean" do
       expect { described_class.new(strict: nil) }.to raise_error(ArgumentError, /strict/)
@@ -91,7 +93,7 @@ RSpec.describe ToonFu::Decoder do
       end
 
       it "treats a line of spaces and tabs as blank when not strict" do
-        expect(described_class.new(strict: false).decode("a: 1\n \t \nb: 2")).to eq({"a" => 1, "b" => 2})
+        expect(lenient.decode("a: 1\n \t \nb: 2")).to eq({"a" => 1, "b" => 2})
       end
     end
 
@@ -102,8 +104,8 @@ RSpec.describe ToonFu::Decoder do
         expect { decoder.decode("  a: 1") }.to raise_error(ToonFu::Error, /no scope/)
       end
 
-      it "skips an indented key-value line when not strict" do
-        expect(described_class.new(strict: false).decode("  a: 1\nb: 2")).to eq({"b" => 2})
+      it "refuses it when not strict too" do
+        expect { lenient.decode("  a: 1\nb: 2") }.to raise_error(ToonFu::Error, /no scope/)
       end
     end
 
@@ -135,8 +137,10 @@ RSpec.describe ToonFu::Decoder do
         expect { decoder.decode("a: 1\na: 2") }.to raise_error(ToonFu::Error, /duplicate key/)
       end
 
-      it "keeps the last one written when not strict" do
-        expect(described_class.new(strict: false).decode("a: 1\na: 2")).to eq({"a" => 2})
+      it "keeps the last value in the first position when not strict", :aggregate_failures do
+        expect(lenient.decode("a: 1\nb: 2\na: 3").to_a).to eq([["a", 3], ["b", 2]])
+        expect(lenient.decode("m[3:]{x}:\n  a: 1\n  b: 2\n  a: 3").fetch("m").to_a).to eq([["a", {"x" => 3}], ["b", {"x" => 2}]])
+        expect(lenient.decode("t[1]{a,b,a}:\n  1,2,3")).to eq({"t" => [{"a" => 3, "b" => 2}]})
       end
     end
 
@@ -157,7 +161,6 @@ RSpec.describe ToonFu::Decoder do
       end
 
       it "counts a leading tab as one level when not strict", :aggregate_failures do
-        lenient = described_class.new(strict: false)
         expect(lenient.decode("a:\n\tb: 1")).to eq({"a" => {"b" => 1}})
         expect(lenient.decode("items[1]{id}:\n\t1")).to eq({"items" => [{"id" => 1}]})
       end
@@ -184,23 +187,14 @@ RSpec.describe ToonFu::Decoder do
       end
     end
 
-    context "with a keyed header carrying no field list" do
-      it "refuses it when strict" do
-        expect { decoder.decode("a[2:]: x,y") }.to raise_error(ToonFu::Error, /malformed/)
-      end
-
-      it "reads the line as a key-value pair when not strict" do
-        expect(described_class.new(strict: false).decode("a[2:]: x,y")).to eq({"a[2" => "]: x,y"})
-      end
-    end
-
-    context "with a fields-bearing header carrying inline content" do
-      it "refuses it when strict" do
-        expect { decoder.decode("a[2]{x,y}: 1,2") }.to raise_error(ToonFu::Error, /malformed/)
-      end
-
-      it "reads the line as a key-value pair when not strict" do
-        expect(described_class.new(strict: false).decode("a[2]{x,y}: 1,2")).to eq({"a[2]{x,y}" => "1,2"})
+    context "with a malformed header" do
+      it "refuses it in either mode", :aggregate_failures do
+        expect { decoder.decode("a[2:]: x,y") }.to raise_error(ToonFu::Error, /malformed.*line 1/)
+        expect { lenient.decode("a[2:]: x,y") }.to raise_error(ToonFu::Error, /malformed.*line 1/)
+        expect { decoder.decode("a[2]{x,y}: 1,2") }.to raise_error(ToonFu::Error, /malformed.*line 1/)
+        expect { lenient.decode("a[2]{x,y}: 1,2") }.to raise_error(ToonFu::Error, /malformed.*line 1/)
+        expect { decoder.decode("a[1]{x}:\t\n  1") }.to raise_error(ToonFu::Error, /malformed.*line 1/)
+        expect { decoder.decode("n\t[1]: y") }.to raise_error(ToonFu::Error, /malformed.*line 1/)
       end
     end
 
@@ -210,40 +204,27 @@ RSpec.describe ToonFu::Decoder do
       end
     end
 
-    context "with whitespace other than a space before a bracket segment" do
-      it "refuses the header when strict" do
-        expect { decoder.decode("n\u00a0[1]: y") }.to raise_error(ToonFu::Error, /malformed/)
-      end
-
-      it "reads the line as a key-value pair when not strict" do
-        expect(described_class.new(strict: false).decode("n\u00a0[1]: y")).to eq({"n\u00a0[1]" => "y"})
-      end
-    end
-
-    context "with a keyless fields-bearing header as a list item" do
-      it "refuses it when strict" do
+    context "with a keyless header out of place" do
+      it "refuses it in either mode", :aggregate_failures do
         expect { decoder.decode("b[1]:\n  - [1]{a}:") }.to raise_error(ToonFu::Error, /keyless/)
-      end
-
-      it "reads it as a key-value pair when not strict" do
-        expect(described_class.new(strict: false).decode("b[2]:\n  - [1]{a}: 2\n  - [1]{a}:")).to eq({"b" => [{"[1]{a}" => 2}, {"[1]{a}" => {}}]})
+        expect { lenient.decode("b[1]:\n  - [1]{a}:") }.to raise_error(ToonFu::Error, /keyless/)
+        expect { decoder.decode("a: 1\n[2]: x,y") }.to raise_error(ToonFu::Error, /keyless/)
+        expect { lenient.decode("a: 1\n[2]: x,y") }.to raise_error(ToonFu::Error, /keyless/)
       end
     end
 
-    context "with a keyless header in object field position" do
-      it "refuses it when strict" do
-        expect { decoder.decode("a: 1\n[2]: x,y") }.to raise_error(ToonFu::Error, /keyless/)
-      end
-
-      it "reads it as a key-value pair when not strict" do
-        expect(described_class.new(strict: false).decode("a: 1\n[2]: x,y")).to eq({"a" => 1, "[2]" => "x,y"})
+    context "with a row of the wrong width" do
+      it "refuses it in either mode", :aggregate_failures do
+        expect { decoder.decode("a[1]{x,y}:\n  1") }.to raise_error(ToonFu::Error, /1 cells on line 2/)
+        expect { lenient.decode("a[1]{x,y}:\n  1,2,3") }.to raise_error(ToonFu::Error, /3 cells on line 2/)
       end
     end
 
     it "names the line of a structural error", :aggregate_failures do
       expect { decoder.decode("a[1]:\n  - x: 1\n    y: 2\n\n    z: 3") }.to raise_error(ToonFu::Error, /blank line.*line 5/)
       expect { decoder.decode("a:\n    b: 1") }.to raise_error(ToonFu::Error, /depth jump on line 2/)
-      expect { described_class.new(strict: false).decode("a: 1\n  hello") }.to raise_error(ToonFu::Error, /bare token line.*line 2/)
+      expect { lenient.decode("a: 1\n  hello") }.to raise_error(ToonFu::Error, /no scope on line 2/)
+      expect { lenient.decode("u[1:]{x}:\n  a: 1\n  boom") }.to raise_error(ToonFu::Error, /without a colon on line 3/)
     end
 
     it "names the line a duplicate key repeats on", :aggregate_failures do
