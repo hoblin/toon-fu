@@ -39,7 +39,18 @@ bundle exec standardrb [--fix]
 
 - New spec version → `X.Y.0`; our fixes and additions → patch. The spec-drift workflow fails daily when a newer spec release exists.
 - Release: bump `lib/toon_fu/version.rb` in a PR, merge, `git tag vX.Y.Z && git push origin vX.Y.Z`, the maintainer approves the `release` deployment. Release notes are GitHub's generated notes.
-- After a new spec version's gem is released, open a PR to `toon-format/toon` that sets toon-fu's spec version in the Ruby row of `docs/ecosystem/implementations.md` (community implementations list).
 - Supply chain: actions pinned by full SHA, least-privilege `permissions`, `Gemfile.lock` committed, publishing through trusted publishing only.
+
+## Spec bump
+
+The spec-drift badge is red: a newer `toon-format/spec` release exists. Precedents: 4.3 in #44/#45, 4.4 in #47/#48.
+
+1. Read what changed: in `spec/toon-spec`, `git fetch --tags`, then the new entries in `CHANGELOG.md`, the `SPEC.md` diff between the tags, and `VERSIONING.md` if it moved. Check `git log vX.Y.0..origin/main`: upstream has tagged before stamping the version or pinning fixtures, and a later re-pin is a patch release.
+2. Check out the new tag in the submodule and run `bundle exec rspec spec/conformance`. The failures are the work.
+3. Write the issue in the shape of #47: what changed upstream per section, the failing fixtures grouped by the rule they exercise, requirements, why MINOR and not patch. Then `/rpi:feature` from it.
+4. Implement by deleting what the spec no longer allows rather than guarding it; the code should read as the spec's own list. Unit specs asserting dropped behaviour go; new unit specs cover only what the fixtures cannot express.
+5. Release bits in the same PR: `VERSION` to `X.Y.0`, `bundle install` for `Gemfile.lock`, `Decoder`/`Encoder` YARD, README: the `toon-spec: X.Y` line, the fixture counts (`tests` entries per fixture file), the `strict:` description, and the comparison table re-run with `BUNDLE_GEMFILE=benchmark/Gemfile bundle exec ruby benchmark/run.rb` after the version bump, with its date.
+6. PR body as #48: summary per encoder/decoder/release with `(§n)` citations, test plan, breaking changes for input no conforming encoder emits.
+7. After the release: bump the Ruby row in `docs/ecosystem/implementations.md` from the `hoblin/toon` fork (precedents toon-format/toon#361, #365), and bump the dependency in `linear-toon-mcp` (`~> X.Y.0` in the gemspec and CLAUDE.md, patch version, tag, push with tags).
 
 Design history: `thoughts/shared/notes/2026-09-24/toon-fu-ruby-toon-gem-decisions.md`.
